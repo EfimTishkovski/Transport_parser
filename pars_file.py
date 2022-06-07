@@ -186,6 +186,7 @@ if __name__ == '__main__':
     # Получение данных о маршрутах (номер - ссылка)
     if flag_launch:
         tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=3)
+        # Дописать сохранение данных в файл
         print('Маршруты получены')
     else:
         flag_launch = False

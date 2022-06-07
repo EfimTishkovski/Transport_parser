@@ -55,14 +55,12 @@ def routs(url):
     time.sleep(5)
     data = driver.find_element(By.ID, 'routeList')
     item_data = data.find_elements(By.TAG_NAME, 'a')
-    print('Данные получены')
     track_data = {}
     for element in item_data:
         track = element.find_element(By.TAG_NAME, 'h3')
         link = element.get_attribute('href')
         track_data[track.text] = link
     driver.quit()
-    print('Словарь сформирован')
     return track_data
 
 # Функция получения остановок и ссылок на расписания по остановкам
@@ -99,10 +97,12 @@ def stops_transport_info(web_browser, base_object, cursor_object, data):
             name_station = element.find_element(By.TAG_NAME, 'h6')
             link = element.get_attribute('href')
             reverse[name_station.text] = link
-
-        station_data = {key : {'Прямое направление' : direct, 'Обратное направление' : reverse}}
+        #print(key)
+        #print(direct)
+        #print(reverse)
+        station_data = {key : {'Прямое направление' : direct.copy(), 'Обратное направление' : reverse.copy()}}
         out.append(station_data)
-    print(out)
+    #print(out)
     return out
 
 # Функция записи данных в базу
@@ -190,6 +190,7 @@ if __name__ == '__main__':
     # Получение данных о маршрутах (номер - ссылка)
     if flag_launch:
         tram_routs = routs(URL_TRAM)
+        print('Маршруты получены')
     else:
         flag_launch = False
         print('Ошибка получения данных о маршрутах')
@@ -197,7 +198,8 @@ if __name__ == '__main__':
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
-        stops_transport_info(web_browser=web_driwer, base_object=base, cursor_object=cursor, data=tram_routs)
+        stops_data = stops_transport_info(web_browser=web_driwer, base_object=base, cursor_object=cursor, data=tram_routs)
+        print('Данные по остановкам получены')
         stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     else:
         flag_launch = False
@@ -206,6 +208,15 @@ if __name__ == '__main__':
     # Получение времени отправления по остановкам
     if flag_launch:
         pass
+
+        for element_rout in stops_data:
+            for name_rout, rout in element_rout.items():
+                print(name_rout)
+                for direction, stops in rout.items():
+                    print(direction)
+                    for name_station, link in stops.items():
+                        print(name_station,'', link)
+
     else:
         flag_launch = False
         print('Ошибка получения времени отправления')

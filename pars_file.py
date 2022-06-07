@@ -23,7 +23,7 @@ def launch(attempts=3):
                 break  # Выход из цикла если соединение установлено
             except Exception as exc:
                 print(exc)
-                time.sleep(5)  # Задержка перед следующей попыткой
+                time.sleep(2)  # Задержка перед следующей попыткой
         else:
             print('Ошибка инициализации: нет соединения с сайтом')
             return False
@@ -42,35 +42,32 @@ def launch(attempts=3):
 
 
 # Получение маршрутов автобусов и ссылок на их расписания
-def routs(url):
+def routs(web_browser, url, property=2):
     """
     Функция получения маршрутов
+    :param web_browser: Объект вэбдрайвера
     :param url: ссылка на страницу с маршрутами
+    :param property: Задержка после загрузки страницы
     :return: track_data словарь с данными, название и номер маршрута : ссылка
     """
-    chrome_options = webdriver.ChromeOptions()
-    chrome_options.add_argument(argument='--headless')
-    driver = webdriver.Chrome(options=chrome_options)
-    driver.get(url)
-    time.sleep(5)
-    data = driver.find_element(By.ID, 'routeList')
+    web_browser.get(url)
+    time.sleep(property)
+    data = web_browser.find_element(By.ID, 'routeList')
     item_data = data.find_elements(By.TAG_NAME, 'a')
     track_data = {}
     for element in item_data:
         track = element.find_element(By.TAG_NAME, 'h3')
         link = element.get_attribute('href')
         track_data[track.text] = link
-    driver.quit()
     return track_data
 
 # Функция получения остановок и ссылок на расписания по остановкам
-def stops_transport_info(web_browser, base_object, cursor_object, data):
+def stops_transport_info(web_browser, data, property=2):
     """
     Функция получения названий остоновок
     :param web_browser: Объект вэбдрайвера
-    :param base_object:
-    :param cursor_object:
     :param data: Входные данные с маршрутами
+    :param property: Задержка после загрузки страницы
     :return: out словарь с выходными данными
     """
     direct = {}   # Прямое направление маршрута
@@ -79,7 +76,7 @@ def stops_transport_info(web_browser, base_object, cursor_object, data):
     for key, val in data.items():
         url = val
         web_browser.get(url)
-        time.sleep(5)
+        time.sleep(property)
         data_from_list_stationA = web_browser.find_element(By.ID, 'tripA')
         name_stations_tripA = data_from_list_stationA.find_elements(By.TAG_NAME, 'a')
         data_from_list_stationB = web_browser.find_element(By.ID, 'tripB')
@@ -97,12 +94,8 @@ def stops_transport_info(web_browser, base_object, cursor_object, data):
             name_station = element.find_element(By.TAG_NAME, 'h6')
             link = element.get_attribute('href')
             reverse[name_station.text] = link
-        #print(key)
-        #print(direct)
-        #print(reverse)
         station_data = {key : {'Прямое направление' : direct.copy(), 'Обратное направление' : reverse.copy()}}
         out.append(station_data)
-    #print(out)
     return out
 
 # Функция записи данных в базу
@@ -134,7 +127,7 @@ def get_time_list(web_browser,URL):
     """
     # Дописать цикл извлечения ссылки из входного словаря
     web_browser.get(URL)  # Подгружаем страницу
-    time.sleep(5)
+    time.sleep(3)
     week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
                  5: 'пятница', 6: 'Суббота', 7: 'Воскресенье'}
     temp_time_1 = {}
@@ -170,6 +163,9 @@ def stop_func(web_browser, base_object, cursor_object):
     print('Соединения закрыты')
 
 if __name__ == '__main__':
+    # Настройки
+    speed = 3 # Задержка для загрузки страницы
+
     # Ссылки на транспорт
     URL_BUS = ''  # Автобусы
     URL_TROLLEYBUS = ''  # Троллейбусы
@@ -189,7 +185,7 @@ if __name__ == '__main__':
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
     if flag_launch:
-        tram_routs = routs(URL_TRAM)
+        tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=3)
         print('Маршруты получены')
     else:
         flag_launch = False
@@ -198,7 +194,7 @@ if __name__ == '__main__':
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
-        stops_data = stops_transport_info(web_browser=web_driwer, base_object=base, cursor_object=cursor, data=tram_routs)
+        stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3)
         print('Данные по остановкам получены')
         stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     else:

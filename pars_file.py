@@ -119,16 +119,16 @@ def write_data(web_browser, base_object, cursor_object, data):
         # Если база пуста, то первое заполнение
         pass
 
-def get_time_list(web_browser,URL):
+def get_time_list(web_browser, URL, wait_time=2):
     """
     Функция получения времени отправления по остановке
     :param web_browser: Объект браузера
     :param URL: ссылка на страницу
-    :return:
+    :return: словарь с днями недели и временем отправления
     """
     # Дописать цикл извлечения ссылки из входного словаря
     web_browser.get(URL)  # Подгружаем страницу
-    time.sleep(3)
+    time.sleep(wait_time)
     week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
                  5: 'пятница', 6: 'Суббота', 7: 'Воскресенье'}
     temp_time_1 = {}
@@ -146,9 +146,8 @@ def get_time_list(web_browser,URL):
         for i in range(0, len(data_mass) - 1, 2):
             temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
         out_data_mass[week_days[day]] = temp_time_1.copy()
-    print(out_data_mass)
-    time.sleep(1)
-    print('DONE')
+    #print(out_data_mass)
+    return out_data_mass
 
 def stop_func(web_browser, base_object, cursor_object):
     """
@@ -187,7 +186,7 @@ if __name__ == '__main__':
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
     if flag_launch:
-        tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=3)
+        tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=speed)
         # Дописать сохранение данных в файл
         with open('temp.txt', 'w') as routs_data_file:
             json.dump(tram_routs, routs_data_file)
@@ -199,11 +198,11 @@ if __name__ == '__main__':
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
-        stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3)
+        stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=speed)
         with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
             json.dump(stops_data, tram_station_data_file)
         print('Данные по остановкам получены')
-        stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
+
     else:
         flag_launch = False
         print('Ошибка получения данных по остановкам')
@@ -217,7 +216,9 @@ if __name__ == '__main__':
                 for direction, stops in rout.items():
                     print(direction)
                     for name_station, link in stops.items():
-                        print(name_station,'', link)
+                        arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
+                        print(name_station,'', arrive_time)
+        stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
 
     else:
         flag_launch = False

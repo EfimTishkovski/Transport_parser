@@ -2,6 +2,7 @@ import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
+import json
 
 
 # Функция запуска парсинга
@@ -162,9 +163,10 @@ def stop_func(web_browser, base_object, cursor_object):
     base_object.close()
     print('Соединения закрыты')
 
+
 if __name__ == '__main__':
     # Настройки
-    speed = 3 # Задержка для загрузки страницы
+    speed = 3  # Задержка для загрузки страницы
 
     # Ссылки на транспорт
     URL_BUS = ''  # Автобусы
@@ -187,6 +189,8 @@ if __name__ == '__main__':
     if flag_launch:
         tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=3)
         # Дописать сохранение данных в файл
+        with open('temp.txt', 'w') as routs_data_file:
+            json.dump(tram_routs, routs_data_file)
         print('Маршруты получены')
     else:
         flag_launch = False
@@ -196,6 +200,8 @@ if __name__ == '__main__':
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
         stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3)
+        with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
+            json.dump(stops_data, tram_station_data_file)
         print('Данные по остановкам получены')
         stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     else:
@@ -204,7 +210,6 @@ if __name__ == '__main__':
 
     # Получение времени отправления по остановкам
     if flag_launch:
-        pass
 
         for element_rout in stops_data:
             for name_rout, rout in element_rout.items():

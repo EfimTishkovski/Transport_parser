@@ -212,9 +212,7 @@ if __name__ == '__main__':
         temp_mass = []  # Временный массив для данных для ссылок
         for element_rout in stops_data:
             for name_rout, rout in element_rout.items():
-                #print(name_rout)
                 for direction, stops in rout.items():
-                    #print(direction)
                     for name_station, link in stops.items():
                         #arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
                         temp_mass.append(link)
@@ -223,14 +221,16 @@ if __name__ == '__main__':
         size = len(temp_mass)
         temp_mass = enumerate(temp_mass, start=0)
         for link in temp_mass:
-            for i in range(5):
+            for i in range(10):
                 try:
                     arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=1)
-                    arrive_time_mass.append({link[1] : arrive_time})
+                    arrive_time_mass.append({link[1]: arrive_time})
                     print(f'{link[0]} / {size}')
                     break
                 except:
                     print('Страница не догружена', i)
+                    time.sleep(0.5)
+            arrive_time_mass.append({link[1]: ''})
         else:
             print('Ошибка получения времени')
 

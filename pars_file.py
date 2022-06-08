@@ -138,7 +138,7 @@ def get_time_list(web_browser, URL, wait_time=2):
         button_monday = web_browser.find_element(By.XPATH,
                                             f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
         button_monday.click()  # Щёлкает по кнопкам дней недели
-        time.sleep(0.5)
+        time.sleep(0.3)
         data_from_timelist = web_browser.find_element(By.ID, 'schedule')
         data_mass = data_from_timelist.text.split('\n')
         data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
@@ -209,17 +209,42 @@ if __name__ == '__main__':
 
     # Получение времени отправления по остановкам
     if flag_launch:
-
+        temp_mass = []  # Временный массив для данных для ссылок
         for element_rout in stops_data:
             for name_rout, rout in element_rout.items():
-                print(name_rout)
+                #print(name_rout)
                 for direction, stops in rout.items():
-                    print(direction)
+                    #print(direction)
                     for name_station, link in stops.items():
-                        arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
-                        print(name_station,'', arrive_time)
-        stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
+                        #arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
+                        temp_mass.append(link)
+        # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
+        arrive_time_mass = []
+        size = len(temp_mass)
+        temp_mass = enumerate(temp_mass, start=0)
+        for link in temp_mass:
+            for i in range(5):
+                try:
+                    arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=1)
+                    arrive_time_mass.append({link[1] : arrive_time})
+                    print(f'{link[0]} / {size}')
+                    break
+                except:
+                    print('Страница не догружена', i)
+        else:
+            print('Ошибка получения времени')
 
+        print('данные по времени отправления получены')
+        temp_file = open('temp_out.txt', 'w', encoding='utf-8')
+        for line in arrive_time_mass:
+            print(line, file=temp_file)
+        temp_file.close()
+
+        #temp_mass.clear()
+        stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     else:
         flag_launch = False
         print('Ошибка получения времени отправления')
+
+    # Дописать добавление времени отправления в общий массив данных
+    # Дописать запись данных в базу

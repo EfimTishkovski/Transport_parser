@@ -282,7 +282,7 @@ if __name__ == '__main__':
                     print('Страница не догружена', i)
             #arrive_time_mass.append({link[1]: ''})
         else:
-            print('Ошибка получения времени')
+            print('Ошибка получения времени')  # Возможно лишнее
 
         temp_file = open('temp_out.txt', 'w', encoding='utf-8')
         for line in arrive_time_mass:

@@ -237,7 +237,7 @@ if __name__ == '__main__':
                 print('Маршруты получены и записаны в temp_roads.txt')
                 break
             except:
-                print(f'страница не догружена, попытка {i} из {iteration}')
+                print(f'Страница не догружена, попытка {i} из {iteration}')
     else:
         flag_launch = False
         print('Ошибка получения данных о маршрутах')
@@ -245,11 +245,15 @@ if __name__ == '__main__':
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
-        stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=speed)
-        with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
-            json.dump(stops_data, tram_station_data_file)
-        print('Данные по остановкам получены')
-
+        for i in range(iteration):
+            try:
+                stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=speed)
+                with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
+                    json.dump(stops_data, tram_station_data_file)
+                print('Данные по остановкам получены')
+                break
+            except:
+                print(f'Страница не догружена, попытка {i} из {iteration}')
     else:
         flag_launch = False
         print('Ошибка получения данных по остановкам')
@@ -276,16 +280,15 @@ if __name__ == '__main__':
                     break
                 except:
                     print('Страница не догружена', i)
-                    #time.sleep(0.5)
             #arrive_time_mass.append({link[1]: ''})
         else:
             print('Ошибка получения времени')
 
-        print('данные по времени отправления получены')
         temp_file = open('temp_out.txt', 'w', encoding='utf-8')
         for line in arrive_time_mass:
             print(line, file=temp_file)
         temp_file.close()
+        print('Данные по времени отправления получены и сохранены в temp_out.txt')
 
         #temp_mass.clear()
         stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)

@@ -185,12 +185,17 @@ if __name__ == '__main__':
 
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
+    iteration = 5
     if flag_launch:
-        tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=speed)
-        # Дописать сохранение данных в файл
-        with open('temp.txt', 'w') as routs_data_file:
-            json.dump(tram_routs, routs_data_file)
-        print('Маршруты получены')
+        for i in range(iteration):
+            try:
+                tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=speed)
+                with open('temp_roads.txt', 'w') as routs_data_file:
+                    json.dump(tram_routs, routs_data_file)
+                print('Маршруты получены и записаны в temp_roads.txt')
+                break
+            except:
+                print(f'страница не догружена, попытка {i} из {iteration}')
     else:
         flag_launch = False
         print('Ошибка получения данных о маршрутах')
@@ -229,8 +234,8 @@ if __name__ == '__main__':
                     break
                 except:
                     print('Страница не догружена', i)
-                    time.sleep(0.5)
-            arrive_time_mass.append({link[1]: ''})
+                    #time.sleep(0.5)
+            #arrive_time_mass.append({link[1]: ''})
         else:
             print('Ошибка получения времени')
 

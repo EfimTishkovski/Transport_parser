@@ -270,19 +270,19 @@ if __name__ == '__main__':
         # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
         arrive_time_mass = []
         size = len(temp_mass)
-        temp_mass = enumerate(temp_mass, start=0)
+        temp_mass = enumerate(temp_mass, start=1)
         for link in temp_mass:
             for i in range(10):
                 try:
-                    arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=1)
+                    arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=2)
                     arrive_time_mass.append({link[1]: arrive_time})
                     print(f'{link[0]} / {size}')
                     break
                 except:
                     print('Страница не догружена', i)
-                    arrive_time_mass.append({link[1]: ''})
-        else:
-            print('Ошибка получения времени')  # Возможно лишнее
+            else:
+                print('Страница так и не догрузилась')
+                arrive_time_mass.append({link[1]: ''})
 
         temp_file = open('temp_out.txt', 'w', encoding='utf-8')
         for line in arrive_time_mass:

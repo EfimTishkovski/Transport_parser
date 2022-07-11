@@ -248,9 +248,9 @@ if __name__ == '__main__':
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
-    else:
-        flag_launch = False
-        print('Ошибка получения данных о маршрутах')
+        else:
+            flag_launch = False
+            print('Ошибка получения данных о маршрутах')
 
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
@@ -262,24 +262,24 @@ if __name__ == '__main__':
                     json.dump(stops_data, tram_station_data_file)
                 print('Данные по остановкам получены')
                 # Запись данных в БД
-                clear_routs_link_table_qwery = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
-                cursor.execute(clear_routs_link_table_qwery)
+                clear_routs_link_table_query = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
+                cursor.execute(clear_routs_link_table_query)
                 base.commit()
                 for element in stops_data:
                     for rout, data in element.items():
                         for direction, stop_link in data.items():
                             for stop, link in stop_link.items():
-                                qwery_for_write = "INSERT INTO tram_main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
-                                cursor.execute(qwery_for_write, (rout, direction, stop, link))
+                                query_for_write = "INSERT INTO tram_main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
+                                cursor.execute(query_for_write, (rout, direction, stop, link))
                                 base.commit()
                 print('Данные добавлены в базу')
 
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
-    else:
-        flag_launch = False
-        print('Ошибка получения данных по остановкам')
+        else:
+            flag_launch = False
+            print('Ошибка получения данных по остановкам')
     flag_launch = False
     # Получение времени отправления по остановкам
     if flag_launch:
@@ -290,6 +290,7 @@ if __name__ == '__main__':
                     for name_station, link in stops.items():
                         #arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
                         temp_mass.append(link)
+
         # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
         arrive_time_mass = []
         size = len(temp_mass)

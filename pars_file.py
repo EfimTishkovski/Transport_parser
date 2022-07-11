@@ -216,14 +216,14 @@ if __name__ == '__main__':
 
     flag_launch = False  # Флаг запуска
     objects = launch()   # Запуск инициализации
+    web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
 
     # Проверка инициализации
     if objects:
-        web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
         print('Инициализация завершена успешно')
         flag_launch = True
     else:
-        print('Инициализация не запущена')
+        print('Инициализация не выполнена')
 
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
@@ -237,8 +237,14 @@ if __name__ == '__main__':
                     json.dump(tram_routs, routs_data_file)
                 print('Маршруты получены и записаны в temp_roads.txt')
                 # Запись данных в БД
-
-
+                clear_routs_link_table_qwery = "DELETE FROM routs_link" # Очистка таблицы от предыдущих записей
+                cursor.execute(clear_routs_link_table_qwery)
+                base.commit()
+                for rout, link in tram_routs.items():
+                    qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
+                    cursor.execute(qwery_for_write_routs_link, (rout, link))
+                    base.commit()
+                print('Данные добавлены в базу')
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
@@ -255,13 +261,26 @@ if __name__ == '__main__':
                 with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
                     json.dump(stops_data, tram_station_data_file)
                 print('Данные по остановкам получены')
+                # Запись данных в БД
+                clear_routs_link_table_qwery = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
+                cursor.execute(clear_routs_link_table_qwery)
+                base.commit()
+                for element in stops_data:
+                    for rout, data in element.items():
+                        for direction, stop_link in data.items():
+                            for stop, link in stop_link.items():
+                                qwery_for_write = "INSERT INTO tram_main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
+                                cursor.execute(qwery_for_write, (rout, direction, stop, link))
+                                base.commit()
+                print('Данные добавлены в базу')
+
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
     else:
         flag_launch = False
         print('Ошибка получения данных по остановкам')
-
+    flag_launch = False
     # Получение времени отправления по остановкам
     if flag_launch:
         temp_mass = []  # Временный массив для данных для ссылок

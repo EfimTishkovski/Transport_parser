@@ -30,7 +30,7 @@ def launch(attempts=3):
             return False
         # Создание соединения с БД
         try:
-            base_object = sqlite3.connect('transport_data.db')  # Создание объекта базы
+            base_object = sqlite3.connect('tram_data.db')  # Создание объекта базы
             cursor_object = base_object.cursor()  # Создание объекта курсора
         except:
             print('Ошибка инициализации: нет соединения с базой')
@@ -232,9 +232,13 @@ if __name__ == '__main__':
         for i in range(iteration):
             try:
                 tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=speed)
+                # Запись данных во временный файл, а оно надо?
                 with open('temp_roads.txt', 'w') as routs_data_file:
                     json.dump(tram_routs, routs_data_file)
                 print('Маршруты получены и записаны в temp_roads.txt')
+                # Запись данных в БД
+
+
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
@@ -286,7 +290,7 @@ if __name__ == '__main__':
 
         temp_file = open('temp_out.txt', 'w', encoding='utf-8')
         for line in arrive_time_mass:
-            print(line, file=temp_file)
+            print(line, file=temp_file)  # переписать на json
         temp_file.close()
         print('Данные по времени отправления получены и сохранены в temp_out.txt')
 

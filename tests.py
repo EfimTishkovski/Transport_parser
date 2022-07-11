@@ -82,11 +82,13 @@ def complex_mass(mass):
         temp.clear()
     return out
 
-def write_base(mass, base):
+def write_base(mass, base, cursor, table):
     """
     Функция записи в базу
     :param mass: Массив данных для записи
     :param base: Объект базы
+    :param base: Объект курсора
+    :param table: Задействованная таблица базы
     :return:
     """
     pass
@@ -97,13 +99,16 @@ if __name__ == '__main__':
     connection = sqlite3.connect('test_base.db')
     cursor = connection.cursor()
 
-
     with open('temp_roads.txt', 'r') as file:
         data = json.load(file)
         print(data)
         print(type(data))
 
-
+        for rout, link in data.items():
+            query = "INSERT INTO time_table (rout, link) VALUES (?, ?)"
+            parametrs = (rout, link)
+            cursor.execute(query, parametrs)
+            connection.commit()
 
     cursor.close()
     connection.close()

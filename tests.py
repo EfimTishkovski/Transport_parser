@@ -3,6 +3,7 @@ import time
 import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+import ast
 
 def func():
     file = open('temp_station_tram_data.txt', 'r')
@@ -95,7 +96,7 @@ def write_base(mass, base, cursor, table):
 
 def hours_digit_test(mass):
     for digit in mass:
-        if digit != ' ' and 0 <= int(digit) <= 23:
+        if digit != ' ' and len(digit) <=2 and 0 <= int(digit) <= 23:
             continue
         else:
             return False, 'Часы не в рамках 0 < 23'
@@ -106,7 +107,6 @@ def hours_digit_test(mass):
         n = 1
     # Проверка на не убывание часов, что идут по порядку
     for i in range(len(mass) - n):
-        #print(mass[i], '', mass[i + 1])
         if mass[i] < mass[i + 1]:
             continue
         else: return False, 'Часы расположены не по порядку'
@@ -147,19 +147,23 @@ if __name__ == '__main__':
 
     connection = sqlite3.connect('tram_data.db')
     cursor = connection.cursor()
-    with open('temp_out.txt', 'r') as file:
-        mass = json.load(file)
 
-    arr_time = list(mass[0].items())[0][1]
-    print(arr_time)
-    flag = correct_time_data(arr_time)[0]
-    print(flag)
-    connection.commit()
+    query_to_data_from_base = "SELECT * FROM tram_main_data"
+    cursor.execute(query_to_data_from_base)
+    mass = cursor.fetchall()
+    cr_num = 0
+    for line in mass:
+        time_dikt = ast.literal_eval(line[3])
+        rezult, out_error = correct_time_data(time_dikt)
+        if rezult:
+            print('OK')
+            continue
+        else:
+            print(line[0],'', line[1], '', line[2], '', out_error)
+            cr_num += 1
+    print('Битых строк', cr_num, 'Из', len(mass))
+
     cursor.close()
     connection.close()
 
-    """
-    flag = minute_digit_test(['05', '06', '07', '08', '09', '10', '11', '12', '13', '14',
-                              '15', '16', '17', '18', '19', '20', '21', '22', '23', '00'])
-    print(flag)
-    """
+

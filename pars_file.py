@@ -204,10 +204,69 @@ def stop_func(web_browser, base_object, cursor_object):
     base_object.close()
     print('Соединения закрыты')
 
+def hours_digit_test(mass):
+    """
+    Функция проверки корректности значений часов в массиве
+    :param mass: Массив с данными для анализа
+    :return: True or False и сообщение об ошибке
+    """
+    for digit in mass:
+        if digit != ' ' and 0 <= int(digit) <= 23:
+            continue
+        else:
+            return False, 'Часы не в рамках 0 < 23'
+    # Проверка на 00 в конце в 24 часовом формате
+    if int(mass[-1]) == 0:
+        n = 2
+    else:
+        n = 1
+    # Проверка на не убывание часов, что идут по порядку
+    for i in range(len(mass) - n):
+        if mass[i] < mass[i + 1]:
+            continue
+        else: return False, 'Часы расположены не по порядку'
+    else:
+        out_flag = True
+    return out_flag, ''
+
+def correct_time_data(data_dikt):
+    """
+    Функция проверки на корректность данных о времени отправления с остановки
+    :param data_dikt: Входные данные в виде словаря
+    :return: True or False и текст ошибки
+    """
+    week_days_mass = []  # массив с днями недели
+    tims_mass = []       # Массив с расписанием по дням недели
+    # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
+    for week_days, tims in data_dikt.items():
+        week_days_mass.append(week_days)
+        tims_mass.append(tims)
+    if len(tims_mass) != len(week_days_mass):
+        return False, 'Пропущен день недели'
+
+    # Проверка 2 каждому часу соответствует массив с минутами
+    hours_mass = []  # Массив для часов
+    minute_mass = [] # Массив для минут
+    for line in tims_mass:
+        hours_mass.clear()
+        minute_mass.clear()
+        for hour, minute in line.items():
+            hours_mass.append(hour)
+            minute_mass.append(minute)
+        if len(hours_mass) != len(minute_mass):
+            return False, 'Количество часов и массивов минут не совпадают'
+        # Проверка на корректность часов в расписании
+        hours_flag, error_hours_digit_test = hours_digit_test(hours_mass)
+        if hours_flag:
+            return True, ''
+        else:
+            return False, error_hours_digit_test
+    return True, ''
+
 
 if __name__ == '__main__':
     # Настройки
-    speed = 3  # Задержка для загрузки страницы
+    speed = 2  # Задержка для загрузки страницы
 
     # Ссылки на транспорт
     URL_BUS = ''  # Автобусы
@@ -299,7 +358,7 @@ if __name__ == '__main__':
         for link in temp_mass:
             for i in range(10):
                 try:
-                    arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=2)
+                    arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=speed)
                     arrive_time_mass.append({link[1]: arrive_time})
                     print(f'{link[0]} / {size}')
                     break
@@ -323,9 +382,12 @@ if __name__ == '__main__':
             cursor.execute(query, parametrs)
         base.commit()
         print('Данные по времени отправления получены и добавлены в базу')
-        stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
-        print('Завершение работы')
     else:
         flag_launch = False
         print('Ошибка получения времени отправления')
     # Проверка на "битые данные" по времени отправления
+    query_to_data_from_base = "SELECT * FROM tram_main_data"
+    data_from_base = ''
+
+    stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
+    print('Завершение работы')

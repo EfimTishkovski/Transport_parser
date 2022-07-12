@@ -93,18 +93,84 @@ def write_base(mass, base, cursor, table):
     """
     pass
 
+def minute_digit_test(mass):
+    for digit in mass:
+        if digit != ' ' and 0 <= int(digit) <= 23:
+            continue
+        else:
+            return False, 'Часы не в рамках 0 < 23'
+    # Проверка на 00 в конце в 24 часовом формате
+    if int(mass[-1]) == 0:
+        n = 2
+    else:
+        n = 1
+    # Проверка на не убывание часов, что идут по порядку
+    for i in range(len(mass) - n):
+        print(mass[i], '', mass[i + 1])
+        if mass[i] < mass[i + 1]:
+            continue
+        else: return False, 'Часы расположены не по порядку'
+    else:
+        out_flag = True
+    return out_flag
+
+def correct_time_data(data_dikt):
+    week_days_mass = []
+    tims_mass = []
+    # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
+    for week_days, tims in data_dikt.items():
+        week_days_mass.append(week_days)
+        tims_mass.append(tims)
+    if len(tims_mass) != len(week_days_mass):
+        return False, 'Пропущен день недели'
+    week_days_mass.clear()
+    tims_mass.clear()
+    print(len(tims_mass), len(week_days_mass))
+
+    # Проверка 2 каждому часу соответствует массив с минутами
+    for line in tims_mass:
+        hours_mass = []
+        minute_mass = []
+        for hour, minute in line.items():
+            hours_mass.append(hour)
+            minute_mass.append(minute)
+        if len(hours_mass) != len(minute_mass):
+            return False, 'Количество часов и массивов минут не совпадают'
+        print(len(hours_mass), len(minute_mass))
+        # print(hours_mass)
+
 if __name__ == '__main__':
 
     connection = sqlite3.connect('tram_data.db')
     cursor = connection.cursor()
     with open('temp_out.txt', 'r') as file:
         mass = json.load(file)
-    for i in range(5,8):
-        link = list(mass[i].items())[0][0]
-        arr_time = list(mass[i].items())[0][1]
-        query = "UPDATE tram_main_data SET time = ? WHERE time = ?"
-        parametrs = (str(arr_time), str(link))
-        cursor.execute(query, parametrs)
+
+    arr_time = list(mass[0].items())[0][1]
+
+    week_days_mass = []
+    tims_mass = []
+    # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
+    for week_days, tims in arr_time.items():
+        week_days_mass.append(week_days)
+        tims_mass.append(tims)
+    print(len(tims_mass), len(week_days_mass))
+    # Проверка 2
+    hours_mass = []
+    for line in tims_mass:
+        hours_mass = []
+        minute_mass = []
+        for hour, minute in line.items():
+            hours_mass.append(hour)
+            minute_mass.append(minute)
+        print(len(hours_mass), len(minute_mass))
+        #print(hours_mass)
+
+
     connection.commit()
     cursor.close()
     connection.close()
+
+    flag = minute_digit_test(['05', '06', '07', '08', '09', '10', '11', '12', '13', '14',
+                              '15', '16', '17', '18', '19', '20', '21', '22', '23', '00'])
+    print(flag)

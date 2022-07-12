@@ -130,7 +130,7 @@ def get_time_list(web_browser, URL, wait_time=2):
     web_browser.get(URL)  # Подгружаем страницу
     time.sleep(wait_time)
     week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
-                 5: 'пятница', 6: 'Суббота', 7: 'Воскресенье'}
+                 5: 'Пятница', 6: 'Суббота', 7: 'Воскресенье'}
     temp_time_1 = {}
     out_data_mass = {}
     for day in range(1, 8):
@@ -235,7 +235,7 @@ if __name__ == '__main__':
                 # Запись данных во временный файл, а оно надо?
                 with open('temp_roads.txt', 'w') as routs_data_file:
                     json.dump(tram_routs, routs_data_file)
-                print('Маршруты получены и записаны в temp_roads.txt')
+                #print('Маршруты получены и записаны в temp_roads.txt')
                 # Запись данных в БД
                 clear_routs_link_table_qwery = "DELETE FROM routs_link" # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_qwery)
@@ -244,7 +244,7 @@ if __name__ == '__main__':
                     qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
                     cursor.execute(qwery_for_write_routs_link, (rout, link))
                     base.commit()
-                print('Данные добавлены в базу')
+                print('Маршруты получены и добавлены в базу')
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
@@ -261,7 +261,7 @@ if __name__ == '__main__':
                 # Сохранение в файл
                 with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
                     json.dump(stops_data, tram_station_data_file)
-                print('Данные по остановкам получены и записаны в temp_station_tram_data.txt')
+                #print('Данные по остановкам получены и записаны в temp_station_tram_data.txt')
                 # Запись данных в БД
                 clear_routs_link_table_query = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_query)
@@ -273,7 +273,7 @@ if __name__ == '__main__':
                                 query_for_write = "INSERT INTO tram_main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
                                 cursor.execute(query_for_write, (rout, direction, stop, link))
                                 base.commit()
-                print('Данные добавлены в базу')
+                print('Данные по остановкам получены и добавлены в базу')
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
@@ -312,7 +312,7 @@ if __name__ == '__main__':
         # Сохранение в файл
         with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
             json.dump(arrive_time_mass, temp_file)
-        print('Данные по времени отправления получены и сохранены в temp_out.txt')
+        #print('Данные по времени отправления получены и сохранены в temp_out.txt')
 
         # Запись в базу
         for line in arrive_time_mass:
@@ -322,9 +322,10 @@ if __name__ == '__main__':
             parametrs = (str(arr_time), str(link))
             cursor.execute(query, parametrs)
         base.commit()
-        print('Данные по времени отправления добавлены в базу')
+        print('Данные по времени отправления получены и добавлены в базу')
         stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
         print('Завершение работы')
     else:
         flag_launch = False
         print('Ошибка получения времени отправления')
+    # Проверка на "битые данные" по времени отправления

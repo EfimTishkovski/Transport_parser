@@ -258,6 +258,7 @@ if __name__ == '__main__':
         for i in range(iteration):
             try:
                 stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=speed)
+                # Сохранение в файл
                 with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
                     json.dump(stops_data, tram_station_data_file)
                 print('Данные по остановкам получены')
@@ -273,14 +274,13 @@ if __name__ == '__main__':
                                 cursor.execute(query_for_write, (rout, direction, stop, link))
                                 base.commit()
                 print('Данные добавлены в базу')
-
                 break
             except:
                 print(f'Страница не догружена, попытка {i} из {iteration}')
         else:
             flag_launch = False
             print('Ошибка получения данных по остановкам')
-    flag_launch = False
+
     # Получение времени отправления по остановкам
     if flag_launch:
         temp_mass = []  # Временный массив для данных для ссылок
@@ -288,6 +288,7 @@ if __name__ == '__main__':
             for name_rout, rout in element_rout.items():
                 for direction, stops in rout.items():
                     for name_station, link in stops.items():
+                        # Дописать упрощённую вервию, убрать лишнее
                         #arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
                         temp_mass.append(link)
 
@@ -308,17 +309,20 @@ if __name__ == '__main__':
                 print('Страница так и не догрузилась')
                 arrive_time_mass.append({link[1]: ''})
 
-        temp_file = open('temp_out.txt', 'w', encoding='utf-8')
-        for line in arrive_time_mass:
-            print(line, file=temp_file)  # переписать на json
-        temp_file.close()
+        # Сохранение в файл
+        with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
+            json.dump(arrive_time_mass, temp_file)
         print('Данные по времени отправления получены и сохранены в temp_out.txt')
 
-        #temp_mass.clear()
+        # Запись в базу
+        for line in arrive_time_mass:
+            link, stops_time = line.items()
+            query = "UPDATE tram_main_data SET time = ? WHERE time = ?"
+            parametrs = (stops_time, link)
+            cursor.execute(query, parametrs)
+            base.commit()
+        print('Данные по времени отправления добавлены в базу')
         stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     else:
         flag_launch = False
         print('Ошибка получения времени отправления')
-
-    # Дописать добавление времени отправления в общий массив данных
-    # Дописать запись данных в базу

@@ -93,7 +93,7 @@ def write_base(mass, base, cursor, table):
     """
     pass
 
-def minute_digit_test(mass):
+def hours_digit_test(mass):
     for digit in mass:
         if digit != ' ' and 0 <= int(digit) <= 23:
             continue
@@ -106,38 +106,42 @@ def minute_digit_test(mass):
         n = 1
     # Проверка на не убывание часов, что идут по порядку
     for i in range(len(mass) - n):
-        print(mass[i], '', mass[i + 1])
+        #print(mass[i], '', mass[i + 1])
         if mass[i] < mass[i + 1]:
             continue
         else: return False, 'Часы расположены не по порядку'
     else:
         out_flag = True
-    return out_flag
+    return out_flag, ''
 
 def correct_time_data(data_dikt):
-    week_days_mass = []
-    tims_mass = []
+    week_days_mass = []  # массив с днями недели
+    tims_mass = []       # Массив с расписанием по дням недели
     # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
     for week_days, tims in data_dikt.items():
         week_days_mass.append(week_days)
         tims_mass.append(tims)
     if len(tims_mass) != len(week_days_mass):
         return False, 'Пропущен день недели'
-    week_days_mass.clear()
-    tims_mass.clear()
-    print(len(tims_mass), len(week_days_mass))
 
     # Проверка 2 каждому часу соответствует массив с минутами
+    hours_mass = []  # Массив для часов
+    minute_mass = [] # Массив для минут
     for line in tims_mass:
-        hours_mass = []
-        minute_mass = []
+        hours_mass.clear()
+        minute_mass.clear()
         for hour, minute in line.items():
             hours_mass.append(hour)
             minute_mass.append(minute)
         if len(hours_mass) != len(minute_mass):
             return False, 'Количество часов и массивов минут не совпадают'
-        print(len(hours_mass), len(minute_mass))
-        # print(hours_mass)
+        # Проверка на корректность часов в расписании
+        hours_flag, error_hours_digit_test = hours_digit_test(hours_mass)
+        if hours_flag:
+            return True, ''
+        else:
+            return False, error_hours_digit_test
+    return True, ''
 
 if __name__ == '__main__':
 
@@ -147,30 +151,15 @@ if __name__ == '__main__':
         mass = json.load(file)
 
     arr_time = list(mass[0].items())[0][1]
-
-    week_days_mass = []
-    tims_mass = []
-    # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
-    for week_days, tims in arr_time.items():
-        week_days_mass.append(week_days)
-        tims_mass.append(tims)
-    print(len(tims_mass), len(week_days_mass))
-    # Проверка 2
-    hours_mass = []
-    for line in tims_mass:
-        hours_mass = []
-        minute_mass = []
-        for hour, minute in line.items():
-            hours_mass.append(hour)
-            minute_mass.append(minute)
-        print(len(hours_mass), len(minute_mass))
-        #print(hours_mass)
-
-
+    print(arr_time)
+    flag = correct_time_data(arr_time)[0]
+    print(flag)
     connection.commit()
     cursor.close()
     connection.close()
 
+    """
     flag = minute_digit_test(['05', '06', '07', '08', '09', '10', '11', '12', '13', '14',
                               '15', '16', '17', '18', '19', '20', '21', '22', '23', '00'])
     print(flag)
+    """

@@ -97,7 +97,7 @@ def write_base(mass, base, cursor, table):
 
 def hours_digit_test(mass):
     for digit in mass:
-        if digit != ' ' and len(digit) <=2 and 0 <= int(digit) <= 23:
+        if digit != ' ' and len(digit) <= 2 and 0 <= int(digit) <= 23:
             continue
         else:
             return False, 'Часы не в рамках 0 < 23'

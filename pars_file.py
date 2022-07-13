@@ -213,7 +213,7 @@ def hours_digit_test(mass):
     :return: True or False и сообщение об ошибке
     """
     for digit in mass:
-        if digit != ' ' and 0 <= int(digit) <= 23:
+        if digit != ' ' and len(digit) <= 2 and 0 <= int(digit) <= 23:
             continue
         else:
             return False, 'Часы не в рамках 0 < 23'
@@ -289,6 +289,7 @@ if __name__ == '__main__':
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
     iteration = 5
+    flag_launch = False
     if flag_launch:
         for i in range(iteration):
             try:
@@ -408,12 +409,17 @@ if __name__ == '__main__':
                 incorrect_data_num += 1
         statusbar.close()
         time.sleep(0.5)
+
         # Вывод информации по битым строкам
         if problem_mass:
             print('Битых строк', incorrect_data_num, 'Из', len(data_mass))
-            print('Проблемные строки')
-            for element in problem_mass:
-                print(element)
+            print('Показать проблемные строки? (да, yes, y / нет, no, n)')  # Запрос к юзеру
+            answer_from_user = str(input())
+            # Показать проблемные строки
+            if answer_from_user:
+                print('Проблемные строки')
+                for element in problem_mass:
+                    print(element)
         else:
             print('Проблемных строк не обнаружено')
 

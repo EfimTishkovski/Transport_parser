@@ -4,6 +4,7 @@ import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 import ast
+import tqdm
 
 def func():
     file = open('temp_station_tram_data.txt', 'r')
@@ -152,18 +153,38 @@ if __name__ == '__main__':
     cursor.execute(query_to_data_from_base)
     mass = cursor.fetchall()
     cr_num = 0
+    pbar = tqdm.tqdm(total=len(mass), colour='yellow')
+    problem_mass = []
     for line in mass:
         time_dikt = ast.literal_eval(line[3])
         rezult, out_error = correct_time_data(time_dikt)
+        pbar.update()
         if rezult:
-            print('OK')
+            #print('OK')
             continue
         else:
-            print(line[0],'', line[1], '', line[2], '', out_error)
+            #print(line[0],'', line[1], '', line[2], '', out_error)
+            problem_mass.append((line[0], line[1], line[2], out_error))
             cr_num += 1
+    pbar.close()
     print('Битых строк', cr_num, 'Из', len(mass))
+    time.sleep(0.5)
+    print('Проблемные строки')
+    for element in problem_mass:
+        print(element)
+
 
     cursor.close()
     connection.close()
+    """
+    pbar = tqdm.tqdm(total=100)
+    for i in range(100):
+        time.sleep(0.1)
+        pbar.update()
+    pbar.close()
+    """
+
+
+
 
 

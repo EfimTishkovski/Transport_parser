@@ -265,6 +265,8 @@ def correct_time_data(data_dikt):
             return False, error_hours_digit_test
     return True, ''
 
+def defense_of_noload():
+    pass
 
 if __name__ == '__main__':
     # Настройки
@@ -275,21 +277,21 @@ if __name__ == '__main__':
     URL_TROLLEYBUS = ''  # Троллейбусы
     URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
 
+    # Запуск
     flag_launch = False  # Флаг запуска
     objects = launch()   # Запуск инициализации
     web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
 
     # Проверка инициализации
     if objects:
-        print('Инициализация завершена успешно')
+        print('Запуск выполнен успешно')
         flag_launch = True
     else:
-        print('Инициализация не выполнена')
+        print('Запуск НЕ выполнен')
 
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
     iteration = 5
-    flag_launch = False
     if flag_launch:
         for i in range(iteration):
             try:
@@ -297,7 +299,7 @@ if __name__ == '__main__':
                 # Запись данных во временный файл, а оно надо?
                 with open('temp_roads.txt', 'w') as routs_data_file:
                     json.dump(tram_routs, routs_data_file)
-                #print('Маршруты получены и записаны в temp_roads.txt')
+
                 # Запись данных в БД
                 clear_routs_link_table_qwery = "DELETE FROM routs_link" # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_qwery)
@@ -306,10 +308,10 @@ if __name__ == '__main__':
                     qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
                     cursor.execute(qwery_for_write_routs_link, (rout, link))
                     base.commit()
-                print('Маршруты получены и добавлены в базу')
+                print('Данные по маршрутам получены и добавлены в базу')
                 break
             except:
-                print(f'Страница не догружена, попытка {i} из {iteration}')
+                continue
         else:
             flag_launch = False
             print('Ошибка получения данных о маршрутах')
@@ -323,7 +325,7 @@ if __name__ == '__main__':
                 # Сохранение в файл
                 with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
                     json.dump(stops_data, tram_station_data_file)
-                #print('Данные по остановкам получены и записаны в temp_station_tram_data.txt')
+
                 # Запись данных в БД
                 clear_routs_link_table_query = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_query)
@@ -338,38 +340,40 @@ if __name__ == '__main__':
                 print('Данные по остановкам получены и добавлены в базу')
                 break
             except:
-                print(f'Страница не догружена, попытка {i} из {iteration}')
+                continue
         else:
             flag_launch = False
             print('Ошибка получения данных по остановкам')
 
     # Получение времени отправления по остановкам
     if flag_launch:
-        temp_mass = []  # Временный массив для данных для ссылок
+        query_size = "SELECT Count(*) FROM tram_main_data"
+        cursor.execute(query_size)
+        size_mass = cursor.fetchone()[0]  # Получение кол-ва строк со сылками из базы
+        arrive_time_statusbar = tqdm(total=size_mass, colour='yellow')  # создание статус бара
+        temp_mass = []        # Временный массив для данных для ссылок
+        arrive_time_mass = [] # Массив для полученных данных
+        no_load_page_count = 0
         for element_rout in stops_data:
             for name_rout, rout in element_rout.items():
                 for direction, stops in rout.items():
                     for name_station, link in stops.items():
-                        # Дописать упрощённую вервию, убрать лишнее
-                        #arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
-                        temp_mass.append(link)
-
-        # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
-        arrive_time_mass = []
-        size = len(temp_mass)
-        temp_mass = enumerate(temp_mass, start=1)
-        for link in temp_mass:
-            for i in range(10):
-                try:
-                    arrive_time = get_time_list(web_browser=web_driwer, URL=link[1], wait_time=speed)
-                    arrive_time_mass.append({link[1]: arrive_time})
-                    print(f'{link[0]} / {size}')
-                    break
-                except:
-                    print('Страница не догружена', i)
-            else:
-                print('Страница так и не догрузилась')
-                arrive_time_mass.append({link[1]: ''})
+                        # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
+                        arrive_time_statusbar.update()    # Обновление статус бара, показывает прогресс обработки
+                        for i in range(10):
+                            try:
+                                arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
+                                arrive_time_mass.append({link: arrive_time})
+                                break
+                            except:
+                                continue
+                        else:
+                            #print('Страница так и не догрузилась')
+                            arrive_time_mass.append({link: ''})
+                            no_load_page_count += 1
+        arrive_time_statusbar.close()
+        if no_load_page_count > 0:
+            print('Есть недогруженные страницы, количество:', no_load_page_count)
 
         # Сохранение в файл
         with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
@@ -388,6 +392,7 @@ if __name__ == '__main__':
     else:
         flag_launch = False
         print('Ошибка получения времени отправления')
+
     # Проверка на "битые данные" по времени отправления
     print('Выполнить проверку данных? (да, yes, y / нет, no, n)')  # Запрос к юзеру
     answer_from_user = str(input())

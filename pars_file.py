@@ -3,6 +3,8 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import time
 import json
+from tqdm import tqdm
+from ast import literal_eval
 
 
 # Функция запуска парсинга
@@ -386,8 +388,37 @@ if __name__ == '__main__':
         flag_launch = False
         print('Ошибка получения времени отправления')
     # Проверка на "битые данные" по времени отправления
-    query_to_data_from_base = "SELECT * FROM tram_main_data"
-    data_from_base = ''
+    print('Выполнить проверку данных? (да, yes, y / нет, no, n)')  # Запрос к юзеру
+    answer_from_user = str(input())
+    if answer_from_user.lower() in ['да', 'yes', 'y']:
+        query_to_data_from_base = "SELECT * FROM tram_main_data"
+        cursor.execute(query_to_data_from_base)
+        data_mass = cursor.fetchall()
+        incorrect_data_num = 0 # Счётчик битых строк
+        statusbar = tqdm(total=len(data_mass), colour='yellow')
+        problem_mass = [] # Массив для битых строк
+        for line in data_mass:
+            time_dikt = literal_eval(line[3])   # Магия преобразования строки в словарь
+            rezult, out_error = correct_time_data(time_dikt)
+            statusbar.update()
+            if rezult:
+                continue
+            else:
+                problem_mass.append((line[0], line[1], line[2], out_error))
+                incorrect_data_num += 1
+        statusbar.close()
+        time.sleep(0.5)
+        # Вывод информации по битым строкам
+        if problem_mass:
+            print('Битых строк', incorrect_data_num, 'Из', len(data_mass))
+            print('Проблемные строки')
+            for element in problem_mass:
+                print(element)
+        else:
+            print('Проблемных строк не обнаружено')
+
+    else:
+        print('Проверка корректности данных отменена')
 
     stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     print('Завершение работы')

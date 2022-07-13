@@ -163,7 +163,6 @@ if __name__ == '__main__':
             #print('OK')
             continue
         else:
-            #print(line[0],'', line[1], '', line[2], '', out_error)
             problem_mass.append((line[0], line[1], line[2], out_error))
             cr_num += 1
     pbar.close()

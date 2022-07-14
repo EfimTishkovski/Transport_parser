@@ -146,35 +146,23 @@ def correct_time_data(data_dikt):
 
 if __name__ == '__main__':
 
-    connection = sqlite3.connect('tram_data.db')
+    connection = sqlite3.connect('trolleybus_data.db')
     cursor = connection.cursor()
 
-    query_to_data_from_base = "SELECT * FROM tram_main_data"
-    cursor.execute(query_to_data_from_base)
-    mass = cursor.fetchall()
-    cr_num = 0
-    pbar = tqdm.tqdm(total=len(mass), colour='yellow')
-    problem_mass = []
-    for line in mass:
-        time_dikt = ast.literal_eval(line[3])
-        rezult, out_error = correct_time_data(time_dikt)
-        pbar.update()
-        if rezult:
-            #print('OK')
-            continue
-        else:
-            problem_mass.append((line[0], line[1], line[2], out_error))
-            cr_num += 1
-    pbar.close()
-    print('Битых строк', cr_num, 'Из', len(mass))
-    time.sleep(0.5)
-    print('Проблемные строки')
-    for element in problem_mass:
-        print(element)
+    #query_to_data_from_base = "SELECT * FROM tram_main_data"
+    #cursor.execute(query_to_data_from_base)
+    #mass = cursor.fetchall()
 
 
     cursor.close()
     connection.close()
+
+    with open('temp_station.txt', 'r') as tram_station_data_file:
+        mass = json.load(tram_station_data_file)
+    for line in mass:
+        print(line)
+
+    #func()
     """
     pbar = tqdm.tqdm(total=100)
     for i in range(100):

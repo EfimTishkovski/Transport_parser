@@ -77,6 +77,7 @@ def stops_transport_info(web_browser, data, property=2):
     direct = {}   # Прямое направление маршрута
     reverse = {}  # Обратное
     out = []      # Список для выходных данных
+    s_bar = tqdm(total=len(data))
     for key, val in data.items():
         url = val
         web_browser.get(url)
@@ -100,6 +101,8 @@ def stops_transport_info(web_browser, data, property=2):
             reverse[name_station.text] = link
         station_data = {key : {'Прямое направление' : direct.copy(), 'Обратное направление' : reverse.copy()}}
         out.append(station_data)
+        s_bar.update()
+    s_bar.close()
     return out
 
 def get_time_list(web_browser, URL, wait_time=2):
@@ -290,7 +293,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                 for rout, link in tram_routs.items():
                     qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
                     cursor.execute(qwery_for_write_routs_link, (rout, link))
-                    base.commit()
+                base.commit()
                 print('Данные по маршрутам получены и добавлены в базу')
                 break
             except:
@@ -304,34 +307,34 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     if flag_launch:
         for i in range(iteration):
             try:
-                stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=speed)
+                stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3)
                 # Сохранение в файл
                 if reserve_file_copy:
                     with open('temp_station.txt', 'w') as tram_station_data_file:
                         json.dump(stops_data, tram_station_data_file)
-
                 # Запись данных в БД
-                clear_routs_link_table_query = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
+                clear_routs_link_table_query = "DELETE FROM main_data"  # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_query)
                 base.commit()
                 for element in stops_data:
                     for rout, data in element.items():
                         for direction, stop_link in data.items():
                             for stop, link in stop_link.items():
-                                query_for_write = "INSERT INTO tram_main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
+                                query_for_write = "INSERT INTO main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
                                 cursor.execute(query_for_write, (rout, direction, stop, link))
-                                base.commit()
+                base.commit()
                 print('Данные по остановкам получены и добавлены в базу')
                 break
             except:
+                print('Попытка', i)
                 continue
         else:
             flag_launch = False
             print('Ошибка получения данных по остановкам')
-
+    flag_launch = False
     # Получение времени отправления по остановкам
     if flag_launch:
-        query_size = "SELECT Count(*) FROM tram_main_data"
+        query_size = "SELECT Count(*) FROM main_data"
         cursor.execute(query_size)
         size_mass = cursor.fetchone()[0]  # Получение кол-ва строк со сылками из базы
         arrive_time_statusbar = tqdm(total=size_mass, colour='yellow')  # создание статус бара
@@ -353,7 +356,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                                 continue
                         else:
                             arrive_time_mass.append({link: ''})
-                            no_load_page_count += 1
+                            no_load_page_count += 1   # Счётчик незагруженных страниц
         arrive_time_statusbar.close()
         if no_load_page_count > 0:
             print('Есть недогруженные страницы, количество:', no_load_page_count)
@@ -367,7 +370,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         for line in arrive_time_mass:
             link = list(line.items())[0][0]
             arr_time = list(line.items())[0][1]
-            query = "UPDATE tram_main_data SET time = ? WHERE time = ?"
+            query = "UPDATE main_data SET time = ? WHERE time = ?"
             parametrs = (str(arr_time), str(link))
             cursor.execute(query, parametrs)
         base.commit()
@@ -418,12 +421,13 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
 if __name__ == '__main__':
     # Ссылки на транспорт
     URL_BUS = ''         # Автобусы
-    URL_TROLLEYBUS = ''  # Троллейбусы
-    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
+    URL_TROLLEYBUS = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus'  # Троллейбусы
+    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'              # Трамваи
 
     BASE_TRAM = 'tram_data.db'              # База с данными о трамваях
     BASE_BUS = 'bus_data.db'                # База с данными о автобусах
     BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
 
     # Запуск основной функции
-    main_get_data(URL_TRAM, BASE_TRAM)
+    #main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
+    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False)

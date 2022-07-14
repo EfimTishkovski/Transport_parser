@@ -66,43 +66,55 @@ def routs(web_browser, url, property=2):
     return track_data
 
 # Функция получения остановок и ссылок на расписания по остановкам
-def stops_transport_info(web_browser, data, property=2):
+def stops_transport_info(web_browser, data, property=2, iteration=5):
     """
     Функция получения названий остоновок
     :param web_browser: Объект вэбдрайвера
     :param data: Входные данные с маршрутами
     :param property: Задержка после загрузки страницы
+    :param iteration: Количество повторений при недогрузке страницы
     :return: out словарь с выходными данными
     """
     direct = {}   # Прямое направление маршрута
     reverse = {}  # Обратное
     out = []      # Список для выходных данных
-    s_bar = tqdm(total=len(data))
+    s_bar = tqdm(total=len(data), colour='yellow')
+    no_load_page_counter = 0
     for key, val in data.items():
-        url = val
-        web_browser.get(url)
-        time.sleep(property)
-        data_from_list_stationA = web_browser.find_element(By.ID, 'tripA')
-        name_stations_tripA = data_from_list_stationA.find_elements(By.TAG_NAME, 'a')
-        data_from_list_stationB = web_browser.find_element(By.ID, 'tripB')
-        name_stations_tripB = data_from_list_stationB.find_elements(By.TAG_NAME, 'a')
-        # Прямое направление
-        direct.clear()
-        for element in name_stations_tripA:
-            name_station = element.find_element(By.TAG_NAME, 'h6')
-            link = element.get_attribute('href')
-            direct[name_station.text] = link
-
-        # Обратное направление
-        reverse.clear()
-        for element in name_stations_tripB:
-            name_station = element.find_element(By.TAG_NAME, 'h6')
-            link = element.get_attribute('href')
-            reverse[name_station.text] = link
-        station_data = {key : {'Прямое направление' : direct.copy(), 'Обратное направление' : reverse.copy()}}
-        out.append(station_data)
         s_bar.update()
+        for i in range(iteration):
+            try:
+                url = val
+                web_browser.get(url)
+                time.sleep(property)
+                data_from_list_stationA = web_browser.find_element(By.ID, 'tripA')
+                name_stations_tripA = data_from_list_stationA.find_elements(By.TAG_NAME, 'a')
+                data_from_list_stationB = web_browser.find_element(By.ID, 'tripB')
+                name_stations_tripB = data_from_list_stationB.find_elements(By.TAG_NAME, 'a')
+                # Прямое направление
+                direct.clear()
+                for element in name_stations_tripA:
+                    name_station = element.find_element(By.TAG_NAME, 'h6')
+                    link = element.get_attribute('href')
+                    direct[name_station.text] = link
+                # Обратное направление
+                reverse.clear()
+                for element in name_stations_tripB:
+                    name_station = element.find_element(By.TAG_NAME, 'h6')
+                    link = element.get_attribute('href')
+                    reverse[name_station.text] = link
+                station_data = {key : {'Прямое направление' : direct.copy(), 'Обратное направление' : reverse.copy()}}
+                out.append(station_data)
+                break
+            except:
+                continue
+        else:
+            station_data = {key: {'Прямое направление': '', 'Обратное направление': ''}}
+            out.append(station_data)
+            no_load_page_counter += 1
     s_bar.close()
+    if no_load_page_counter > 0:
+        print('Не догружено страниц:', no_load_page_counter)
     return out
 
 def get_time_list(web_browser, URL, wait_time=2):
@@ -307,7 +319,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     if flag_launch:
         for i in range(iteration):
             try:
-                stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3)
+                stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3, iteration=8)
                 # Сохранение в файл
                 if reserve_file_copy:
                     with open('temp_station.txt', 'w') as tram_station_data_file:
@@ -326,7 +338,6 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                 print('Данные по остановкам получены и добавлены в базу')
                 break
             except:
-                print('Попытка', i)
                 continue
         else:
             flag_launch = False

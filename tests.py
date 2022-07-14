@@ -7,7 +7,7 @@ import ast
 import tqdm
 
 def func():
-    file = open('temp_station_tram_data.txt', 'r')
+    file = open('temp_station.txt', 'r')
     data = json.load(file)
     print(data)
     file.close()

@@ -7,11 +7,12 @@ from tqdm import tqdm
 from ast import literal_eval
 
 
-# Функция запуска парсинга
-def launch(attempts=3):
+# Функция запуска соединения с сервером
+def launch(base_name, attempts=3):
     """
     Функция запуска, проверяет соединение с сайтом и базой.
     :param attempts : количество попыток проверки
+    :param base_name : имя файла с базой
     :return: driver, base, cursor : объект соединения с сайтом, объект базы, объект курсора
     """
     try:
@@ -32,8 +33,8 @@ def launch(attempts=3):
             return False
         # Создание соединения с БД
         try:
-            base_object = sqlite3.connect('tram_data.db')  # Создание объекта базы
-            cursor_object = base_object.cursor()  # Создание объекта курсора
+            base_object = sqlite3.connect(base_name)  # Создание объекта базы
+            cursor_object = base_object.cursor()      # Создание объекта курсора
         except:
             print('Ошибка инициализации: нет соединения с базой')
             return False
@@ -101,26 +102,6 @@ def stops_transport_info(web_browser, data, property=2):
         out.append(station_data)
     return out
 
-# Функция записи данных в базу
-def write_data(web_browser, base_object, cursor_object, data):
-    """
-    Функуия для записи данных в БД
-    Таблица: Маршрут, Остановка, Направление, Расписание
-    :param web_browser: Объект вэбдрайвера
-    :param base_object: Объект БД
-    :param cursor_object: Объект курсора в БД
-    :param data: массив с данными для записи
-    :return:
-    """
-    # Проверка базы на пустоту
-    be_data_query = f'SELECT EXISTS (SELECT "Маршрут" FROM tram)'
-    if cursor_object.execute(be_data_query):
-        # Если база заполнена то обновление
-        pass
-    else:
-        # Если база пуста, то первое заполнение
-        pass
-
 def get_time_list(web_browser, URL, wait_time=2):
     """
     Функция получения времени отправления по остановке
@@ -164,7 +145,6 @@ def get_time_list(web_browser, URL, wait_time=2):
         for i in range(0, len(data_mass) - 1, 2):
             temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
         out_data_mass[week_days[day]] = temp_time_1.copy()
-    #print(out_data_mass)
     return out_data_mass
 
 def complex_mass(mass):
@@ -268,19 +248,21 @@ def correct_time_data(data_dikt):
 def defense_of_noload():
     pass
 
-if __name__ == '__main__':
+def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True):
     # Настройки
     speed = 2  # Задержка для загрузки страницы
 
-    # Ссылки на транспорт
-    URL_BUS = ''  # Автобусы
-    URL_TROLLEYBUS = ''  # Троллейбусы
-    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
-
     # Запуск
     flag_launch = False  # Флаг запуска
-    objects = launch()   # Запуск инициализации
+    objects = launch(base_name=base_name)   # Запуск инициализации
     web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
+
+    # Информационные сообщения
+    if reserve_file_copy:
+        print('Резервное копирование включено')
+
+    if correct_data_test:
+        print('Проверка корректности данных включена')
 
     # Проверка инициализации
     if objects:
@@ -295,10 +277,11 @@ if __name__ == '__main__':
     if flag_launch:
         for i in range(iteration):
             try:
-                tram_routs = routs(web_browser=web_driwer, url=URL_TRAM, property=speed)
-                # Запись данных во временный файл, а оно надо?
-                with open('temp_roads.txt', 'w') as routs_data_file:
-                    json.dump(tram_routs, routs_data_file)
+                tram_routs = routs(web_browser=web_driwer, url=URL, property=speed)
+                # Сохранение данных в файл
+                if reserve_file_copy:
+                    with open('temp_roads.txt', 'w') as routs_data_file:
+                        json.dump(tram_routs, routs_data_file)
 
                 # Запись данных в БД
                 clear_routs_link_table_qwery = "DELETE FROM routs_link" # Очистка таблицы от предыдущих записей
@@ -323,8 +306,9 @@ if __name__ == '__main__':
             try:
                 stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=speed)
                 # Сохранение в файл
-                with open('temp_station_tram_data.txt', 'w') as tram_station_data_file:
-                    json.dump(stops_data, tram_station_data_file)
+                if reserve_file_copy:
+                    with open('temp_station.txt', 'w') as tram_station_data_file:
+                        json.dump(stops_data, tram_station_data_file)
 
                 # Запись данных в БД
                 clear_routs_link_table_query = "DELETE FROM tram_main_data"  # Очистка таблицы от предыдущих записей
@@ -368,7 +352,6 @@ if __name__ == '__main__':
                             except:
                                 continue
                         else:
-                            #print('Страница так и не догрузилась')
                             arrive_time_mass.append({link: ''})
                             no_load_page_count += 1
         arrive_time_statusbar.close()
@@ -376,9 +359,9 @@ if __name__ == '__main__':
             print('Есть недогруженные страницы, количество:', no_load_page_count)
 
         # Сохранение в файл
-        with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
-            json.dump(arrive_time_mass, temp_file)
-        #print('Данные по времени отправления получены и сохранены в temp_out.txt')
+        if reserve_file_copy:
+            with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
+                json.dump(arrive_time_mass, temp_file)
 
         # Запись в базу
         for line in arrive_time_mass:
@@ -390,13 +373,10 @@ if __name__ == '__main__':
         base.commit()
         print('Данные по времени отправления получены и добавлены в базу')
     else:
-        flag_launch = False
         print('Ошибка получения времени отправления')
 
     # Проверка на "битые данные" по времени отправления
-    print('Выполнить проверку данных? (да, yes, y / нет, no, n)')  # Запрос к юзеру
-    answer_from_user = str(input())
-    if answer_from_user.lower() in ['да', 'yes', 'y']:
+    if correct_data_test:
         query_to_data_from_base = "SELECT * FROM tram_main_data"
         cursor.execute(query_to_data_from_base)
         data_mass = cursor.fetchall()
@@ -416,6 +396,7 @@ if __name__ == '__main__':
         time.sleep(0.5)
 
         # Вывод информации по битым строкам
+        # Добавить исправление не корректных строк
         if problem_mass:
             print('Битых строк', incorrect_data_num, 'Из', len(data_mass))
             print('Показать проблемные строки? (да, yes, y / нет, no, n)')  # Запрос к юзеру
@@ -433,3 +414,16 @@ if __name__ == '__main__':
 
     stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     print('Завершение работы')
+
+if __name__ == '__main__':
+    # Ссылки на транспорт
+    URL_BUS = ''         # Автобусы
+    URL_TROLLEYBUS = ''  # Троллейбусы
+    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
+
+    BASE_TRAM = 'tram_data.db'              # База с данными о трамваях
+    BASE_BUS = 'bus_data.db'                # База с данными о автобусах
+    BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
+
+    # Запуск основной функции
+    main_get_data(URL_TRAM, BASE_TRAM)

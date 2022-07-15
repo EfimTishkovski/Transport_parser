@@ -1,3 +1,4 @@
+import concurrent.futures
 import json
 import time
 import sqlite3
@@ -5,6 +6,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 import ast
 import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 def func():
     file = open('temp_station.txt', 'r')
@@ -146,30 +148,34 @@ def correct_time_data(data_dikt):
 
 if __name__ == '__main__':
 
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+
     connection = sqlite3.connect('trolleybus_data.db')
     cursor = connection.cursor()
 
-    #query_to_data_from_base = "SELECT * FROM tram_main_data"
-    #cursor.execute(query_to_data_from_base)
-    #mass = cursor.fetchall()
+    query_to_data_from_base = "SELECT time FROM main_data"
+    cursor.execute(query_to_data_from_base)
+    mass = cursor.fetchall()
+    data = []
+    for i in range(10):
+        new_element = mass[i]
+        data.append(new_element[0])
+    print(len(data))
+    print(data[0])
+
+
+    with ThreadPoolExecutor(10) as executor:
+        futures = []
+        futures.append({executor.submit(get_time_list, driver, url) : url for url in data})
+        for future in concurrent.futures.as_completed(futures):
+            print(future.result())
 
 
     cursor.close()
     connection.close()
 
-    with open('temp_station.txt', 'r') as tram_station_data_file:
-        mass = json.load(tram_station_data_file)
-    for line in mass:
-        print(line)
-
-    #func()
-    """
-    pbar = tqdm.tqdm(total=100)
-    for i in range(100):
-        time.sleep(0.1)
-        pbar.update()
-    pbar.close()
-    """
 
 
 

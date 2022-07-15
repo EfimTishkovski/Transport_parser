@@ -264,6 +264,14 @@ def defense_of_noload():
     pass
 
 def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True):
+    """
+    Главня функция парсинга
+    :param URL: Ссылка (автобус, троллейбус, трамвай)
+    :param base_name: Имя файла с базой данных
+    :param reserve_file_copy: Резервное промежуточное копирование в файлы
+    :param correct_data_test: проверка корректности времени отправления
+    :return:
+    """
     # Настройки
     speed = 2  # Задержка для загрузки страницы
 
@@ -271,6 +279,8 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     flag_launch = False  # Флаг запуска
     objects = launch(base_name=base_name)   # Запуск инициализации
     web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
+
+    # Дописать проверку файла базы данных и/или его создание
 
     # Информационные сообщения
     if reserve_file_copy:
@@ -349,7 +359,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         cursor.execute(query_size)
         size_mass = cursor.fetchone()[0]  # Получение кол-ва строк со сылками из базы
         arrive_time_statusbar = tqdm(total=size_mass, colour='yellow')  # создание статус бара
-        temp_mass = []        # Временный массив для данных для ссылок
+        #temp_mass = []        # Временный массив для данных для ссылок
         arrive_time_mass = [] # Массив для полученных данных
         no_load_page_count = 0
         for element_rout in stops_data:

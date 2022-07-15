@@ -155,11 +155,12 @@ def get_time_list(web_browser, URL, wait_time=2):
         else:
             # Обработка сложного, не стандартного массива
             out_data_mass[week_days[day]] = complex_mass(data_mass)
-
+        """
         # Возможно лишний кусок, дублируется выше
         for i in range(0, len(data_mass) - 1, 2):
             temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
         out_data_mass[week_days[day]] = temp_time_1.copy()
+        """
     return out_data_mass
 
 def complex_mass(mass):

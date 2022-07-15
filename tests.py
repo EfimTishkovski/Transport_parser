@@ -159,22 +159,28 @@ if __name__ == '__main__':
     cursor.execute(query_to_data_from_base)
     mass = cursor.fetchall()
     data = []
-    for i in range(10):
+    for i in range(3):
         new_element = mass[i]
         data.append(new_element[0])
     print(len(data))
     print(data[0])
+    print()
+
+    try:
+        with ThreadPoolExecutor() as executor:
+            arr_time = {executor.submit(get_time_list, driver, link) : link for link in data}
+            for future in concurrent.futures.as_completed(arr_time):
+                print(arr_time[future], ':', future.result())
+        cursor.close()
+        connection.close()
+        driver.quit()
+    except:
+        print('ошибка')
+        cursor.close()
+        connection.close()
+        driver.quit()
 
 
-    with ThreadPoolExecutor(10) as executor:
-        futures = []
-        futures.append({executor.submit(get_time_list, driver, url) : url for url in data})
-        for future in concurrent.futures.as_completed(futures):
-            print(future.result())
-
-
-    cursor.close()
-    connection.close()
 
 
 

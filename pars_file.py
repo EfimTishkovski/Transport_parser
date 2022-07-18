@@ -34,7 +34,7 @@ def launch(base_name, attempts=3):
         # Создание соединения с БД
         try:
             base_object = sqlite3.connect(base_name)  # Создание объекта базы
-            cursor_object = base_object.cursor()      # Создание объекта курсора
+            cursor_object = base_object.cursor()  # Создание объекта курсора
         except:
             print('Ошибка инициализации: нет соединения с базой')
             return False
@@ -65,6 +65,7 @@ def routs(web_browser, url, property=2):
         track_data[track.text] = link
     return track_data
 
+
 # Функция получения остановок и ссылок на расписания по остановкам
 def stops_transport_info(web_browser, data, property=2, iteration=5):
     """
@@ -75,9 +76,9 @@ def stops_transport_info(web_browser, data, property=2, iteration=5):
     :param iteration: Количество повторений при недогрузке страницы
     :return: out словарь с выходными данными
     """
-    direct = {}   # Прямое направление маршрута
+    direct = {}  # Прямое направление маршрута
     reverse = {}  # Обратное
-    out = []      # Список для выходных данных
+    out = []  # Список для выходных данных
     s_bar = tqdm(total=len(data), colour='yellow')
     no_load_page_counter = 0
     for key, val in data.items():
@@ -103,7 +104,7 @@ def stops_transport_info(web_browser, data, property=2, iteration=5):
                     name_station = element.find_element(By.TAG_NAME, 'h6')
                     link = element.get_attribute('href')
                     reverse[name_station.text] = link
-                station_data = {key : {'Прямое направление' : direct.copy(), 'Обратное направление' : reverse.copy()}}
+                station_data = {key: {'Прямое направление': direct.copy(), 'Обратное направление': reverse.copy()}}
                 out.append(station_data)
                 break
             except:
@@ -117,51 +118,48 @@ def stops_transport_info(web_browser, data, property=2, iteration=5):
         print('Не догружено страниц:', no_load_page_counter)
     return out
 
-def get_time_list(web_browser, URL, wait_time=2):
+
+def get_time_list(URL, wait_time=2, iteration=5):
     """
     Функция получения времени отправления по остановке
-    :param web_browser: Объект браузера
     :param URL: ссылка на страницу
-    :return: словарь с днями недели и временем отправления
+    :param iteration: Количество попыток загрузки страницы
+    :return: словарь с днями недели и временем отправления или '' если не удалось получить данные
     """
     # Дописать цикл извлечения ссылки из входного словаря
-    web_browser.get(URL)  # Подгружаем страницу
+    # Создание подключения
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+
+    driver.get(URL)  # Подгружаем страницу
     time.sleep(wait_time)
     week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
                  5: 'Пятница', 6: 'Суббота', 7: 'Воскресенье'}
-    temp_time_1 = {}
+    temp_time = {}
     out_data_mass = {}
     for day in range(1, 8):
-        temp_time_1.clear()
-        button_monday = web_browser.find_element(By.XPATH,
-                                            f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
-        button_monday.click()  # Щёлкает по кнопкам дней недели
-        time.sleep(0.3)
-        data_from_timelist = web_browser.find_element(By.ID, 'schedule')
-        data_mass = data_from_timelist.text.split('\n')
-        data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
-        # Сортировка данных
-        # Проверка на "не стандартные данные"
-        not_standart_data_flag = False
-        for i in range(0, len(data_mass) - 1):
-            if len(data_mass[i]) < len(data_mass[i + 1]):
-                not_standart_data_flag = True
+        for i in range(iteration):
+            try:
+                temp_time.clear()
+                button_monday = driver.find_element(By.XPATH,
+                                                         f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
+                button_monday.click()  # Щёлкает по кнопкам дней недели
+                time.sleep(0.3)
+                data_from_time_list = driver.find_element(By.ID, 'schedule')
+                data_mass = data_from_time_list.text.split('\n')
+                data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
+                # Сортировка данных
+                for i in range(0, len(data_mass) - 1, 2):
+                    temp_time[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
+                    out_data_mass[week_days[day]] = temp_time.copy()
                 break
-        if not_standart_data_flag:
-            # Обработка стандартного массива
-            for i in range(0, len(data_mass) - 1, 2):
-                temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
-                out_data_mass[week_days[day]] = temp_time_1.copy()
+            except Exception:
+                continue
         else:
-            # Обработка сложного, не стандартного массива
-            out_data_mass[week_days[day]] = complex_mass(data_mass)
-        """
-        # Возможно лишний кусок, дублируется выше
-        for i in range(0, len(data_mass) - 1, 2):
-            temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
-        out_data_mass[week_days[day]] = temp_time_1.copy()
-        """
+            return ''
     return out_data_mass
+
 
 def complex_mass(mass):
     """
@@ -189,6 +187,7 @@ def complex_mass(mass):
         temp.clear()
     return out
 
+
 def stop_func(web_browser, base_object, cursor_object):
     """
     Функция завершения работы
@@ -201,6 +200,7 @@ def stop_func(web_browser, base_object, cursor_object):
     cursor_object.close()
     base_object.close()
     print('Соединения закрыты')
+
 
 def hours_digit_test(mass):
     """
@@ -222,10 +222,12 @@ def hours_digit_test(mass):
     for i in range(len(mass) - n):
         if mass[i] < mass[i + 1]:
             continue
-        else: return False, 'Часы расположены не по порядку'
+        else:
+            return False, 'Часы расположены не по порядку'
     else:
         out_flag = True
     return out_flag, ''
+
 
 def correct_time_data(data_dikt):
     """
@@ -234,7 +236,7 @@ def correct_time_data(data_dikt):
     :return: True or False и текст ошибки
     """
     week_days_mass = []  # массив с днями недели
-    tims_mass = []       # Массив с расписанием по дням недели
+    tims_mass = []  # Массив с расписанием по дням недели
     # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
     for week_days, tims in data_dikt.items():
         week_days_mass.append(week_days)
@@ -244,7 +246,7 @@ def correct_time_data(data_dikt):
 
     # Проверка 2 каждому часу соответствует массив с минутами
     hours_mass = []  # Массив для часов
-    minute_mass = [] # Массив для минут
+    minute_mass = []  # Массив для минут
     for line in tims_mass:
         hours_mass.clear()
         minute_mass.clear()
@@ -261,8 +263,10 @@ def correct_time_data(data_dikt):
             return False, error_hours_digit_test
     return True, ''
 
+
 def defense_of_noload():
     pass
+
 
 def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True):
     """
@@ -278,7 +282,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
 
     # Запуск
     flag_launch = False  # Флаг запуска
-    objects = launch(base_name=base_name)   # Запуск инициализации
+    objects = launch(base_name=base_name)  # Запуск инициализации
     web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
 
     # Дописать проверку файла базы данных и/или его создание
@@ -310,7 +314,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                         json.dump(tram_routs, routs_data_file)
 
                 # Запись данных в БД
-                clear_routs_link_table_qwery = "DELETE FROM routs_link" # Очистка таблицы от предыдущих записей
+                clear_routs_link_table_qwery = "DELETE FROM routs_link"  # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_qwery)
                 base.commit()
                 for rout, link in tram_routs.items():
@@ -360,15 +364,15 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         cursor.execute(query_size)
         size_mass = cursor.fetchone()[0]  # Получение кол-ва строк со сылками из базы
         arrive_time_statusbar = tqdm(total=size_mass, colour='yellow')  # создание статус бара
-        #temp_mass = []        # Временный массив для данных для ссылок
-        arrive_time_mass = [] # Массив для полученных данных
+        # temp_mass = []        # Временный массив для данных для ссылок
+        arrive_time_mass = []  # Массив для полученных данных
         no_load_page_count = 0
         for element_rout in stops_data:
             for name_rout, rout in element_rout.items():
                 for direction, stops in rout.items():
                     for name_station, link in stops.items():
                         # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
-                        arrive_time_statusbar.update()    # Обновление статус бара, показывает прогресс обработки
+                        arrive_time_statusbar.update()  # Обновление статус бара, показывает прогресс обработки
                         for i in range(10):
                             try:
                                 arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
@@ -378,7 +382,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                                 continue
                         else:
                             arrive_time_mass.append({link: ''})
-                            no_load_page_count += 1   # Счётчик незагруженных страниц
+                            no_load_page_count += 1  # Счётчик незагруженных страниц
         arrive_time_statusbar.close()
         if no_load_page_count > 0:
             print('Есть недогруженные страницы, количество:', no_load_page_count)
@@ -405,11 +409,11 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         query_to_data_from_base = "SELECT * FROM tram_main_data"
         cursor.execute(query_to_data_from_base)
         data_mass = cursor.fetchall()
-        incorrect_data_num = 0 # Счётчик битых строк
+        incorrect_data_num = 0  # Счётчик битых строк
         statusbar = tqdm(total=len(data_mass), colour='yellow')
-        problem_mass = [] # Массив для битых строк
+        problem_mass = []  # Массив для битых строк
         for line in data_mass:
-            time_dikt = literal_eval(line[3])   # Магия преобразования строки в словарь
+            time_dikt = literal_eval(line[3])  # Магия преобразования строки в словарь
             rezult, out_error = correct_time_data(time_dikt)
             statusbar.update()
             if rezult:
@@ -440,16 +444,17 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
     print('Завершение работы')
 
+
 if __name__ == '__main__':
     # Ссылки на транспорт
-    URL_BUS = ''         # Автобусы
+    URL_BUS = ''  # Автобусы
     URL_TROLLEYBUS = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus'  # Троллейбусы
-    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'              # Трамваи
+    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
 
-    BASE_TRAM = 'tram_data.db'              # База с данными о трамваях
-    BASE_BUS = 'bus_data.db'                # База с данными о автобусах
+    BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
+    BASE_BUS = 'bus_data.db'  # База с данными о автобусах
     BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
 
     # Запуск основной функции
-    #main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
+    # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
     main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False)

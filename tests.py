@@ -146,15 +146,61 @@ def correct_time_data(data_dikt):
             return False, error_hours_digit_test
     return True, ''
 
-if __name__ == '__main__':
+def get_time_list_inner_driver(URL, wait_time=2):
+    """
+    Функция получения времени отправления по остановке
+    :param web_browser: Объект браузера
+    :param URL: ссылка на страницу
+    :return: словарь с днями недели и временем отправления
+    """
 
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(argument='--headless')
     driver = webdriver.Chrome(options=chrome_options)
 
-    connection = sqlite3.connect('trolleybus_data.db')
-    cursor = connection.cursor()
+    driver.get(URL)  # Подгружаем страницу
+    time.sleep(wait_time)
+    week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
+                     5: 'Пятница', 6: 'Суббота', 7: 'Воскресенье'}
+    temp_time_1 = {}
+    out_data_mass = {}
+    for day in range(1, 8):
+        temp_time_1.clear()
+        button_monday = driver.find_element(By.XPATH,
+                                                     f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
+        button_monday.click()  # Щёлкает по кнопкам дней недели
+        time.sleep(0.3)
+        data_from_timelist = driver.find_element(By.ID, 'schedule')
+        data_mass = data_from_timelist.text.split('\n')
+        data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
+        # Сортировка данных
+        # Проверка на "не стандартные данные"
+        not_standart_data_flag = False
+        for i in range(0, len(data_mass) - 1):
+            if len(data_mass[i]) < len(data_mass[i + 1]):
+                not_standart_data_flag = True
+                break
+        if not_standart_data_flag:
+            # Обработка стандартного массива
+            for i in range(0, len(data_mass) - 1, 2):
+                temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
+                out_data_mass[week_days[day]] = temp_time_1.copy()
+        else:
+            # Обработка сложного, не стандартного массива
+            out_data_mass[week_days[day]] = complex_mass(data_mass)
+    driver.quit()
+    return out_data_mass
 
+if __name__ == '__main__':
+
+    #chrome_options = webdriver.ChromeOptions()
+    #chrome_options.add_argument(argument='--headless')
+    #driver = webdriver.Chrome(options=chrome_options)
+
+    #connection = sqlite3.connect('trolleybus_data.db')
+    #cursor = connection.cursor()
+
+    """
     query_to_data_from_base = "SELECT time FROM main_data"
     cursor.execute(query_to_data_from_base)
     mass = cursor.fetchall()
@@ -165,20 +211,27 @@ if __name__ == '__main__':
     print(len(data))
     print(data[0])
     print()
+    """
 
-    try:
-        with ThreadPoolExecutor() as executor:
-            arr_time = {executor.submit(get_time_list, driver, link) : link for link in data}
-            for future in concurrent.futures.as_completed(arr_time):
-                print(arr_time[future], ':', future.result())
-        cursor.close()
-        connection.close()
-        driver.quit()
-    except:
-        print('ошибка')
-        cursor.close()
-        connection.close()
-        driver.quit()
+    data_1 = ['https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1/stops/9565/0',
+            'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1/stops/9592/0',
+            'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1/stops/9483/0'
+    ]
+
+    with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
+        arr_time = {executor.submit(get_time_list_inner_driver, link, wait_time=3) : link for link in data_1}
+        for future in concurrent.futures.as_completed(arr_time):
+            url = arr_time[future]
+            try:
+                data = future.result()
+            except Exception as exc:
+                print(f'{url} : {exc}')
+            else:print(f'{url} : {data}')
+
+        #cursor.close()
+        #connection.close()
+        #driver.quit()
+
 
 
 

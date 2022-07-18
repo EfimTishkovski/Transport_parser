@@ -8,6 +8,9 @@ import ast
 import tqdm
 from concurrent.futures import ThreadPoolExecutor
 
+import pars_file
+
+
 def func():
     file = open('temp_station.txt', 'r')
     data = json.load(file)
@@ -16,7 +19,7 @@ def func():
     return data
 
 
-def get_time_list(web_browser, URL, wait_time=2):
+def get_time_list_1(web_browser, URL, wait_time=2):
     """
     Функция получения времени отправления по остановке
     :param web_browser: Объект браузера
@@ -213,7 +216,7 @@ if __name__ == '__main__':
     cursor.execute(query_to_data_from_base)
     mass = cursor.fetchall()
     data = []
-    size = 100
+    size = 20
     for i in range(size):
         new_element = mass[i]
         data.append(new_element[0])
@@ -221,13 +224,13 @@ if __name__ == '__main__':
     data_mass = []
     s_bar = tqdm.tqdm(total=size, colour='yellow')
     with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
-        arr_time = {executor.submit(get_time_list_inner_driver, link, wait_time=3) : link for link in data}
+        arr_time = {executor.submit(pars_file.get_time_list, URL=link, wait_time=3, iteration=8) : link for link in data}
         for future in concurrent.futures.as_completed(arr_time):
             url = arr_time[future]
             try:
                 data = future.result()
             except Exception as exc:
-                data_mass.append({url : ''})
+                data_mass.append({url : data})
                 s_bar.update()
             else:
                 data_mass.append({url : data})

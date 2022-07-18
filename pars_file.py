@@ -157,7 +157,9 @@ def get_time_list(URL, wait_time=2, iteration=5):
             except Exception:
                 continue
         else:
+            driver.quit()
             return ''
+    driver.quit()
     return out_data_mass
 
 

@@ -250,26 +250,26 @@ if __name__ == '__main__':
     """
 
 
-    rout_mass = [('1 ДС \'\'Зелёный Луг-7\'\' - Станция метро "Московская"', 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1'),
-                 ("2 ДС ''Уручье-2'' - ДС ''Зелёный Луг-7''",
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/2'),
-                 ("3 ДС ''Ангарская-4'' - Вокзал",
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/3'),
-                 ("6 ДС ''Лошица-2'' - Вокзал",
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/6'),
-                 ('5 Червенский рынок - Вокзал',
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/5')
-    ]
+    rout_mass = {'1 ДС \'\'Зелёный Луг-7\'\' - Станция метро "Московская"' : 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1',
+                 "2 ДС ''Уручье-2'' - ДС ''Зелёный Луг-7''" :
+                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/2',
+                 "3 ДС ''Ангарская-4'' - Вокзал" :
+                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/3',
+                 "6 ДС ''Лошица-2'' - Вокзал" :
+                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/6',
+                 '5 Червенский рынок - Вокзал' :
+                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/5'}
+
 
     query_to_data_from_base = "SELECT * FROM routs_link"
     cursor.execute(query_to_data_from_base)
     mass = cursor.fetchall()
 
     routs_data = []
-    size = len(mass)
+    size = len(rout_mass)
     s_bar = tqdm.tqdm(total=size, colour='yellow')
     with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        routs = {executor.submit(pars_file.stops_transport_info, data=link, iteration=8): link for link in mass}
+        routs = {executor.submit(pars_file.stops_transport_info, data=link, iteration=8): link for link in rout_mass.items()}
         for future in concurrent.futures.as_completed(routs):
             try:
                 data = future.result()

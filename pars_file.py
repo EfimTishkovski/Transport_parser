@@ -312,6 +312,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         for i in range(iteration):
             try:
                 routs_data = routs(url=URL, delay=speed)
+                # вынести сохранение и запись в отдельный блок
                 # Сохранение данных в файл
                 if reserve_file_copy:
                     with open('temp_roads.txt', 'w') as routs_data_file:
@@ -332,6 +333,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         else:
             flag_launch = False
             print('Ошибка получения данных о маршрутах')
+
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
@@ -341,12 +343,12 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
             s_bar = tqdm(total=size, colour='yellow')
             with ThreadPoolExecutor(max_workers=20) as executor:
                 stops_info = {executor.submit(stops_transport_info, data=line, delay=3, iteration=8): line for line in
-                              routs_data}
+                              routs_data.items()}
                 for future in concurrent.futures.as_completed(stops_info):
                     try:
                         data = future.result()
                     except:
-                        stops_data.append('')
+                        stops_data.append({})
                         s_bar.update()
                     else:
                         stops_data.append(data)
@@ -354,6 +356,9 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         except:
             print('Ошибка, данные об остановках не получены')
         else:
+            for line in stops_data:
+                print(line)
+
             if reserve_file_copy:
                 # Сохранение в файл
                 if reserve_file_copy:

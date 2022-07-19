@@ -1,3 +1,4 @@
+import concurrent.futures
 import sqlite3
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -5,6 +6,7 @@ import time
 import json
 from tqdm import tqdm
 from ast import literal_eval
+from concurrent.futures import ThreadPoolExecutor
 
 
 # Функция запуска соединения с сервером
@@ -13,7 +15,7 @@ def launch(base_name, attempts=3):
     Функция запуска, проверяет соединение с сайтом и базой.
     :param attempts : количество попыток проверки
     :param base_name : имя файла с базой
-    :return: driver, base, cursor : объект соединения с сайтом, объект базы, объект курсора
+    :return: base, cursor : объект базы, объект курсора
     """
     try:
         # Создание объекта вэб драйвера
@@ -39,30 +41,35 @@ def launch(base_name, attempts=3):
             print('Ошибка инициализации: нет соединения с базой')
             return False
         # Если все соединения установлены, то возвращаем объекты
-        return driver, base_object, cursor_object
+        return base_object, cursor_object
     except:
         print('Ошибка инициализации')
         return False
 
 
 # Получение маршрутов автобусов и ссылок на их расписания
-def routs(web_browser, url, property=2):
+def routs(url, delay=2):
     """
     Функция получения маршрутов
-    :param web_browser: Объект вэбдрайвера
     :param url: ссылка на страницу с маршрутами
-    :param property: Задержка после загрузки страницы
+    :param delay: Задержка после загрузки страницы
     :return: track_data словарь с данными, название и номер маршрута : ссылка
     """
-    web_browser.get(url)
-    time.sleep(property)
-    data = web_browser.find_element(By.ID, 'routeList')
+    # Создание объекта вэб драйвера
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+
+    driver.get(url)
+    time.sleep(delay)
+    data = driver.find_element(By.ID, 'routeList')
     item_data = data.find_elements(By.TAG_NAME, 'a')
     track_data = {}
     for element in item_data:
         track = element.find_element(By.TAG_NAME, 'h3')
         link = element.get_attribute('href')
         track_data[track.text] = link
+    driver.quit()
     return track_data
 
 
@@ -187,15 +194,13 @@ def complex_mass(mass):
     return out
 
 
-def stop_func(web_browser, base_object, cursor_object):
+def stop_func(base_object, cursor_object):
     """
     Функция завершения работы
     закрывает соединение с интернетом и БД
-    :param web_browser: Объект вебдрайвера ()
     :param base_object: Объект БД
     :param cursor_object: Объект курсора в БД
     """
-    web_browser.quit()
     cursor_object.close()
     base_object.close()
     print('Соединения закрыты')
@@ -282,7 +287,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     # Запуск
     flag_launch = False  # Флаг запуска
     objects = launch(base_name=base_name)  # Запуск инициализации
-    web_driwer, base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
+    base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
 
     # Дописать проверку файла базы данных и/или его создание
 
@@ -306,17 +311,17 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     if flag_launch:
         for i in range(iteration):
             try:
-                tram_routs = routs(web_browser=web_driwer, url=URL, property=speed)
+                routs_data = routs(url=URL, delay=speed)
                 # Сохранение данных в файл
                 if reserve_file_copy:
                     with open('temp_roads.txt', 'w') as routs_data_file:
-                        json.dump(tram_routs, routs_data_file)
+                        json.dump(routs_data, routs_data_file)
 
                 # Запись данных в БД
                 clear_routs_link_table_qwery = "DELETE FROM routs_link"  # Очистка таблицы от предыдущих записей
                 cursor.execute(clear_routs_link_table_qwery)
                 base.commit()
-                for rout, link in tram_routs.items():
+                for rout, link in routs_data.items():
                     qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
                     cursor.execute(qwery_for_write_routs_link, (rout, link))
                 base.commit()
@@ -327,35 +332,47 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         else:
             flag_launch = False
             print('Ошибка получения данных о маршрутах')
-
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
     if flag_launch:
-        for i in range(iteration):
-            try:
-                stops_data = stops_transport_info(web_browser=web_driwer, data=tram_routs, property=3, iteration=8)
+        try:
+            size = len(routs_data)
+            stops_data = []
+            s_bar = tqdm(total=size, colour='yellow')
+            with ThreadPoolExecutor(max_workers=20) as executor:
+                stops_info = {executor.submit(stops_transport_info, data=line, delay=3, iteration=8): line for line in
+                              routs_data}
+                for future in concurrent.futures.as_completed(stops_info):
+                    try:
+                        data = future.result()
+                    except:
+                        stops_data.append('')
+                        s_bar.update()
+                    else:
+                        stops_data.append(data)
+                        s_bar.update()
+        except:
+            print('Ошибка, данные об остановках не получены')
+        else:
+            if reserve_file_copy:
                 # Сохранение в файл
                 if reserve_file_copy:
                     with open('temp_station.txt', 'w') as tram_station_data_file:
                         json.dump(stops_data, tram_station_data_file)
-                # Запись данных в БД
-                clear_routs_link_table_query = "DELETE FROM main_data"  # Очистка таблицы от предыдущих записей
-                cursor.execute(clear_routs_link_table_query)
-                base.commit()
-                for element in stops_data:
-                    for rout, data in element.items():
-                        for direction, stop_link in data.items():
-                            for stop, link in stop_link.items():
-                                query_for_write = "INSERT INTO main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
-                                cursor.execute(query_for_write, (rout, direction, stop, link))
-                base.commit()
-                print('Данные по остановкам получены и добавлены в базу')
-                break
-            except:
-                continue
-        else:
-            flag_launch = False
-            print('Ошибка получения данных по остановкам')
+
+            # Запись данных в БД
+            clear_routs_link_table_query = "DELETE FROM main_data"  # Очистка таблицы от предыдущих записей
+            cursor.execute(clear_routs_link_table_query)
+            base.commit()
+            for element in stops_data:
+                for rout, data in element.items():
+                    for direction, stop_link in data.items():
+                        for stop, link in stop_link.items():
+                            query_for_write = "INSERT INTO main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
+                            cursor.execute(query_for_write, (rout, direction, stop, link))
+            base.commit()
+            print('Данные по остановкам получены и добавлены в базу')
+
     flag_launch = False
     # Получение времени отправления по остановкам
     if flag_launch:
@@ -366,7 +383,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         # temp_mass = []        # Временный массив для данных для ссылок
         arrive_time_mass = []  # Массив для полученных данных
         no_load_page_count = 0
-        for element_rout in stops_data:
+        for element_rout in routs_data:
             for name_rout, rout in element_rout.items():
                 for direction, stops in rout.items():
                     for name_station, link in stops.items():
@@ -374,7 +391,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                         arrive_time_statusbar.update()  # Обновление статус бара, показывает прогресс обработки
                         for i in range(10):
                             try:
-                                arrive_time = get_time_list(web_browser=web_driwer, URL=link, wait_time=speed)
+                                arrive_time = get_time_list(URL=link, wait_time=speed)
                                 arrive_time_mass.append({link: arrive_time})
                                 break
                             except:
@@ -440,7 +457,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     else:
         print('Проверка корректности данных отменена')
 
-    stop_func(web_browser=web_driwer, base_object=base, cursor_object=cursor)
+    stop_func(base_object=base, cursor_object=cursor)
     print('Завершение работы')
 
 

@@ -67,56 +67,53 @@ def routs(web_browser, url, property=2):
 
 
 # Функция получения остановок и ссылок на расписания по остановкам
-def stops_transport_info(web_browser, data, property=2, iteration=5):
+def stops_transport_info(data, delay=2, iteration=5):
     """
-    Функция получения названий остоновок
-    :param web_browser: Объект вэбдрайвера
-    :param data: Входные данные с маршрутами
-    :param property: Задержка после загрузки страницы
+    Функция получения ссылок названий остановок
+    :param web_browser: Объект вэб драйвера
+    :param URL: Ссылка на маршрут
+    :param delay: Задержка после загрузки страницы
     :param iteration: Количество повторений при недогрузке страницы
-    :return: out словарь с выходными данными
+    :return: словарь с выходными данными
     """
+
+    # Запуск вэб драйвера
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+
     direct = {}  # Прямое направление маршрута
     reverse = {}  # Обратное
-    out = []  # Список для выходных данных
-    s_bar = tqdm(total=len(data), colour='yellow')
-    no_load_page_counter = 0
-    for key, val in data.items():
-        s_bar.update()
-        for i in range(iteration):
-            try:
-                url = val
-                web_browser.get(url)
-                time.sleep(property)
-                data_from_list_stationA = web_browser.find_element(By.ID, 'tripA')
-                name_stations_tripA = data_from_list_stationA.find_elements(By.TAG_NAME, 'a')
-                data_from_list_stationB = web_browser.find_element(By.ID, 'tripB')
-                name_stations_tripB = data_from_list_stationB.find_elements(By.TAG_NAME, 'a')
-                # Прямое направление
-                direct.clear()
-                for element in name_stations_tripA:
-                    name_station = element.find_element(By.TAG_NAME, 'h6')
-                    link = element.get_attribute('href')
-                    direct[name_station.text] = link
-                # Обратное направление
-                reverse.clear()
-                for element in name_stations_tripB:
-                    name_station = element.find_element(By.TAG_NAME, 'h6')
-                    link = element.get_attribute('href')
-                    reverse[name_station.text] = link
-                station_data = {key: {'Прямое направление': direct.copy(), 'Обратное направление': reverse.copy()}}
-                out.append(station_data)
-                break
-            except:
-                continue
-        else:
-            station_data = {key: {'Прямое направление': '', 'Обратное направление': ''}}
-            out.append(station_data)
-            no_load_page_counter += 1
-    s_bar.close()
-    if no_load_page_counter > 0:
-        print('Не догружено страниц:', no_load_page_counter)
-    return out
+    name_rout = data[0]
+    URL = data[1]
+    for i in range(iteration):
+        try:
+            driver.get(URL)
+            time.sleep(delay)
+            data_from_list_stationA = driver.find_element(By.ID, 'tripA')
+            name_stations_tripA = data_from_list_stationA.find_elements(By.TAG_NAME, 'a')
+            data_from_list_stationB = driver.find_element(By.ID, 'tripB')
+            name_stations_tripB = data_from_list_stationB.find_elements(By.TAG_NAME, 'a')
+            # Прямое направление
+            direct.clear()
+            for element in name_stations_tripA:
+                name_station = element.find_element(By.TAG_NAME, 'h6')
+                link = element.get_attribute('href')
+                direct[name_station.text] = link
+            # Обратное направление
+            reverse.clear()
+            for element in name_stations_tripB:
+                name_station = element.find_element(By.TAG_NAME, 'h6')
+                link = element.get_attribute('href')
+                reverse[name_station.text] = link
+            station_data = {name_rout: {'Прямое направление': direct.copy(), 'Обратное направление': reverse.copy()}}
+            break
+        except:
+            continue
+    else:
+        station_data = {name_rout: {'Прямое направление': '', 'Обратное направление': ''}}
+    driver.quit()
+    return station_data
 
 
 def get_time_list(URL, wait_time=2, iteration=5):
@@ -157,9 +154,9 @@ def get_time_list(URL, wait_time=2, iteration=5):
             except Exception:
                 continue
         else:
-            driver.quit()
+            driver.quit()  # Закрытие драйвера если цикл завершён нормально
             return ''
-    driver.quit()
+    driver.quit()          # Закрытие драйвера если цикл отработал безуспешно
     return out_data_mass
 
 

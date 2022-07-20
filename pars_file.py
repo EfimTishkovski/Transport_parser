@@ -409,13 +409,13 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         arrive_time_statusbar = tqdm(total=len(temp_mass_1), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
-        with ThreadPoolExecutor(max_workers=25) as executor:
+        with ThreadPoolExecutor(max_workers=15) as executor:
             arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10): link for link in temp_mass_1}
             for future in concurrent.futures.as_completed(arrive_time):
                 try:
                     data = future.result()
                 except:
-                    #arrive_time_mass.append({})
+                    arrive_time_mass.append({'' : ''})
                     arrive_time_statusbar.update()
                 else:
                     arrive_time_mass.append(data)

@@ -65,10 +65,13 @@ def routs(url, delay=2):
     data = driver.find_element(By.ID, 'routeList')
     item_data = data.find_elements(By.TAG_NAME, 'a')
     track_data = {}
+    s_bar = tqdm(total=len(item_data), colour='yellow', desc='Маршруты')
     for element in item_data:
         track = element.find_element(By.TAG_NAME, 'h3')
         link = element.get_attribute('href')
         track_data[track.text] = link
+        s_bar.update()
+    s_bar.close()
     driver.quit()
     return track_data
 
@@ -312,27 +315,34 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         for i in range(iteration):
             try:
                 routs_data = routs(url=URL, delay=speed)
-                # вынести сохранение и запись в отдельный блок
-                # Сохранение данных в файл
-                if reserve_file_copy:
-                    with open('temp_roads.txt', 'w') as routs_data_file:
-                        json.dump(routs_data, routs_data_file)
-
-                # Запись данных в БД
-                clear_routs_link_table_qwery = "DELETE FROM routs_link"  # Очистка таблицы от предыдущих записей
-                cursor.execute(clear_routs_link_table_qwery)
-                base.commit()
-                for rout, link in routs_data.items():
-                    qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
-                    cursor.execute(qwery_for_write_routs_link, (rout, link))
-                base.commit()
-                print('Данные по маршрутам получены и добавлены в базу')
                 break
             except:
                 continue
         else:
             flag_launch = False
             print('Ошибка получения данных о маршрутах')
+
+    # Сохранение данных
+    if flag_launch:
+        try:
+            # Сохранение данных в файл
+            if reserve_file_copy:
+                with open('temp_roads.txt', 'w') as routs_data_file:
+                    json.dump(routs_data, routs_data_file)
+
+            # Запись данных в БД
+            clear_routs_link_table_qwery = "DELETE FROM routs_link"  # Очистка таблицы от предыдущих записей
+            cursor.execute(clear_routs_link_table_qwery)
+            base.commit()
+            for rout, link in routs_data.items():
+                qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
+                cursor.execute(qwery_for_write_routs_link, (rout, link))
+            base.commit()
+            print('OK')
+        except:
+            print('Ошибка сохранения данных о маршрутах')
+
+    flag_launch = False
 
     # Получение данных об остановках
     # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]

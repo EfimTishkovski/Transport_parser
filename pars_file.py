@@ -165,9 +165,9 @@ def get_time_list(URL, wait_time=2, iteration=5):
                 continue
         else:
             driver.quit()  # Закрытие драйвера если цикл завершён нормально
-            return ''
+            return {URL : ''}
     driver.quit()          # Закрытие драйвера если цикл отработал безуспешно
-    return out_data_mass
+    return {URL : out_data_mass}
 
 
 def complex_mass(mass):
@@ -285,7 +285,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     :return:
     """
     # Настройки
-    speed = 2  # Задержка для загрузки страницы
+    speed = 3  # Задержка для загрузки страницы
 
     # Запуск
     flag_launch = False  # Флаг запуска
@@ -338,19 +338,18 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                 qwery_for_write_routs_link = "INSERT INTO routs_link (rout, link) VALUES (?, ?)"
                 cursor.execute(qwery_for_write_routs_link, (rout, link))
             base.commit()
-            print('OK')
         except:
             print('Ошибка сохранения данных о маршрутах')
-
-    flag_launch = False
-
+        else:
+            print('OK')
+    time.sleep(0.3) # Задержка для более ровного вывода
     # Получение данных об остановках
-    # [{маршрут : {'Прямое направление : {'остановка : ссылка, ...'}, 'Обратное направление' : {'остановка : ссылка, ...'}}}, {маршрут1 : ...}]
+    # [{маршрут0 : {'Прямое направление : {'остановка' : ссылка, ...}, 'Обратное направление' : {'остановка' : ссылка, ...}}}, {маршрут1 : ...}]
     if flag_launch:
         try:
             size = len(routs_data)
             stops_data = []
-            s_bar = tqdm(total=size, colour='yellow')
+            s_bar = tqdm(total=size, colour='yellow', desc='Остановки')
             with ThreadPoolExecutor(max_workers=20) as executor:
                 stops_info = {executor.submit(stops_transport_info, data=line, delay=3, iteration=8): line for line in
                               routs_data.items()}
@@ -363,12 +362,12 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                     else:
                         stops_data.append(data)
                         s_bar.update()
+            s_bar.close()
         except:
             print('Ошибка, данные об остановках не получены')
-        else:
-            for line in stops_data:
-                print(line)
-
+    # Сохранение данных
+    if flag_launch:
+        try:
             if reserve_file_copy:
                 # Сохранение в файл
                 if reserve_file_copy:
@@ -386,38 +385,62 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                             query_for_write = "INSERT INTO main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
                             cursor.execute(query_for_write, (rout, direction, stop, link))
             base.commit()
-            print('Данные по остановкам получены и добавлены в базу')
+        except:
+            print('Ошибка сохранения данных об остановках')
+        else:
+            print('OK')
 
-    flag_launch = False
+    time.sleep(0.5)
     # Получение времени отправления по остановкам
     if flag_launch:
-        query_size = "SELECT Count(*) FROM main_data"
-        cursor.execute(query_size)
-        size_mass = cursor.fetchone()[0]  # Получение кол-ва строк со сылками из базы
-        arrive_time_statusbar = tqdm(total=size_mass, colour='yellow')  # создание статус бара
-        # temp_mass = []        # Временный массив для данных для ссылок
+        temp_mass = []        # Временный массив для данных для ссылок
         arrive_time_mass = []  # Массив для полученных данных
-        no_load_page_count = 0
-        for element_rout in routs_data:
+
+        for element_rout in stops_data:
             for name_rout, rout in element_rout.items():
                 for direction, stops in rout.items():
-                    for name_station, link in stops.items():
-                        # Получение времени на выходе [{ссылка : время},{ссылка : время},...]
-                        arrive_time_statusbar.update()  # Обновление статус бара, показывает прогресс обработки
-                        for i in range(10):
-                            try:
-                                arrive_time = get_time_list(URL=link, wait_time=speed)
-                                arrive_time_mass.append({link: arrive_time})
-                                break
-                            except:
-                                continue
-                        else:
-                            arrive_time_mass.append({link: ''})
-                            no_load_page_count += 1  # Счётчик незагруженных страниц
-        arrive_time_statusbar.close()
-        if no_load_page_count > 0:
-            print('Есть недогруженные страницы, количество:', no_load_page_count)
+                    for name_station, link_first in stops.items():
+                        temp_mass.append(link_first)
 
+        temp_mass_1 = []
+        for i in range(30):
+            temp_mass_1.append(temp_mass[i])
+
+        arrive_time_statusbar = tqdm(total=len(temp_mass_1), colour='yellow',
+                                     desc='Расписания по остановкам')  # создание статус бара
+        # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
+        with ThreadPoolExecutor(max_workers=25) as executor:
+            arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=8): link for link in temp_mass_1}
+            for future in concurrent.futures.as_completed(arrive_time):
+                try:
+                    data = future.result()
+                except:
+                    arrive_time_mass.append('')
+                    arrive_time_statusbar.update()
+                else:
+                    arrive_time_mass.append(data)
+                    arrive_time_statusbar.update()
+
+        arrive_time_statusbar.close()
+    else:
+        flag_launch = False
+        print('Ошибка, данные о времени отправления не получены')
+
+
+    # Временный вывод
+    no_load_page_count = 0
+    for line in arrive_time_mass:
+        items = list(line.items())
+        if items[0][1] == '':
+            no_load_page_count += 1
+        #print(line)
+
+
+    if no_load_page_count > 0:
+        print('Есть недогруженные страницы, количество:', no_load_page_count)
+
+
+    if flag_launch:
         # Сохранение в файл
         if reserve_file_copy:
             with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
@@ -427,13 +450,13 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         for line in arrive_time_mass:
             link = list(line.items())[0][0]
             arr_time = list(line.items())[0][1]
+            if arr_time == '':
+                continue
             query = "UPDATE main_data SET time = ? WHERE time = ?"
             parametrs = (str(arr_time), str(link))
             cursor.execute(query, parametrs)
         base.commit()
-        print('Данные по времени отправления получены и добавлены в базу')
-    else:
-        print('Ошибка получения времени отправления')
+        print('OK')
 
     # Проверка на "битые данные" по времени отправления
     if correct_data_test:

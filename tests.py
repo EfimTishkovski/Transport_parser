@@ -204,83 +204,8 @@ def get_time_list_inner_driver(URL, wait_time=3, iteration=8):
 
 if __name__ == '__main__':
 
-    #chrome_options = webdriver.ChromeOptions()
-    #chrome_options.add_argument(argument='--headless')
-    #driver = webdriver.Chrome(options=chrome_options)
+    mass = [{'link' : 'time'}, {'link1' : 'new_time'}]
 
-    connection = sqlite3.connect('trolleybus_data.db')
-    cursor = connection.cursor()
-
-    """
-    query_to_data_from_base = "SELECT time FROM main_data"
-    cursor.execute(query_to_data_from_base)
-    mass = cursor.fetchall()
-    data = []
-    size = 100
-    for i in range(size):
-        new_element = mass[i]
-        data.append(new_element[0])
-
-    data_mass = []
-    s_bar = tqdm.tqdm(total=size, colour='yellow')
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        arr_time = {executor.submit(pars_file.get_time_list, URL=link, wait_time=3, iteration=8) : link for link in data}
-        for future in concurrent.futures.as_completed(arr_time):
-            url = arr_time[future]
-            try:
-                data = future.result()
-            except Exception as exc:
-                data_mass.append({url : ''})
-                s_bar.update()
-            else:
-                data_mass.append({url : data})
-                s_bar.update()
-    s_bar.close()
-    print(len(data_mass))
-    count = 0
-    for line in data_mass:
-        print(line)
-        out_time = list(line.values())
-        if out_time[0] == '':
-            count += 1
-    print(f'Нет данных по {count} маршрутам')
-    cursor.close()
-    connection.close()
-    #driver.quit()
-    """
-
-
-    rout_mass = {'1 ДС \'\'Зелёный Луг-7\'\' - Станция метро "Московская"' : 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1',
-                 "2 ДС ''Уручье-2'' - ДС ''Зелёный Луг-7''" :
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/2',
-                 "3 ДС ''Ангарская-4'' - Вокзал" :
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/3',
-                 "6 ДС ''Лошица-2'' - Вокзал" :
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/6',
-                 '5 Червенский рынок - Вокзал' :
-                  'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/5'}
-
-
-    query_to_data_from_base = "SELECT * FROM routs_link"
-    cursor.execute(query_to_data_from_base)
-    mass = cursor.fetchall()
-
-    routs_data = []
-    size = len(rout_mass)
-    s_bar = tqdm.tqdm(total=size, colour='yellow')
-    with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
-        routs = {executor.submit(pars_file.stops_transport_info, data=link, iteration=8): link for link in rout_mass.items()}
-        for future in concurrent.futures.as_completed(routs):
-            try:
-                data = future.result()
-            except Exception as exc:
-                routs_data.append('')
-                s_bar.update()
-            else:
-                routs_data.append(data)
-                s_bar.update()
-    s_bar.close()
-
-    print(len(routs_data))
-    for line in routs_data:
-        print(line)
+    for element in mass:
+        link = list(element.items())
+        print(link[0][0])

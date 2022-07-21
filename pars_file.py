@@ -275,7 +275,7 @@ def defense_of_noload():
     pass
 
 
-def main_get_data(URL, base_name, reserve_file_copy=False, correct_data_test=False, max_workers=20, deep_step_work=3):
+def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=False, max_workers=20, deep_step_work=3):
     """
     Главня функция парсинга
     :param URL: Ссылка (автобус, троллейбус, трамвай)
@@ -399,6 +399,7 @@ def main_get_data(URL, base_name, reserve_file_copy=False, correct_data_test=Fal
 
     if deep_step_work < 3:
         flag_launch = False
+        arrive_time_mass = []  # Массив для полученных данных
 
     # Получение времени отправления по остановкам
     if flag_launch:
@@ -520,4 +521,4 @@ if __name__ == '__main__':
 
     # Запуск основной функции
     # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30, deep_step_work=2)
+    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=35, deep_step_work=3)

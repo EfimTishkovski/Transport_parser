@@ -126,7 +126,7 @@ def stops_transport_info(data, delay=2, iteration=5):
     return station_data
 
 
-def get_time_list(URL, wait_time=2, iteration=5):
+def get_time_list(URL, wait_time=3, iteration=5):
     """
     Функция получения времени отправления по остановке
     :param URL: ссылка на страницу
@@ -152,7 +152,7 @@ def get_time_list(URL, wait_time=2, iteration=5):
                 button_monday = driver.find_element(By.XPATH,
                                                          f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
                 button_monday.click()  # Щёлкает по кнопкам дней недели
-                time.sleep(0.3)
+                time.sleep(0.2)
                 data_from_time_list = driver.find_element(By.ID, 'schedule')
                 data_mass = data_from_time_list.text.split('\n')
                 data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
@@ -164,9 +164,9 @@ def get_time_list(URL, wait_time=2, iteration=5):
             except Exception:
                 continue
         else:
-            driver.quit()  # Закрытие драйвера если цикл завершён нормально
+            driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
             return {URL : ''}
-    driver.quit()          # Закрытие драйвера если цикл отработал безуспешно
+    driver.quit()          # Закрытие драйвера если цикл завершён нормально
     return {URL : out_data_mass}
 
 
@@ -275,7 +275,7 @@ def defense_of_noload():
     pass
 
 
-def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True):
+def main_get_data(URL, base_name, reserve_file_copy=False, correct_data_test=False, max_workers=20, deep_step_work=3):
     """
     Главня функция парсинга
     :param URL: Ссылка (автобус, троллейбус, трамвай)
@@ -291,6 +291,11 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
     flag_launch = False  # Флаг запуска
     objects = launch(base_name=base_name)  # Запуск инициализации
     base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
+    # Фильтрация входного параметра работы главной функции по частям (отладочная часть)
+    if 1 <= deep_step_work <= 3:
+        pass
+    else:
+        deep_step_work = 3
 
     # Дописать проверку файла базы данных и/или его создание
 
@@ -350,7 +355,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
             size = len(routs_data)
             stops_data = []
             s_bar = tqdm(total=size, colour='yellow', desc='Остановки')
-            with ThreadPoolExecutor(max_workers=20) as executor:
+            with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 stops_info = {executor.submit(stops_transport_info, data=line, delay=3, iteration=8): line for line in
                               routs_data.items()}
                 for future in concurrent.futures.as_completed(stops_info):
@@ -391,6 +396,10 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
             print('OK')
 
     time.sleep(0.5)
+
+    if deep_step_work < 3:
+        flag_launch = False
+
     # Получение времени отправления по остановкам
     if flag_launch:
         temp_mass = []        # Временный массив для данных для ссылок
@@ -409,7 +418,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         arrive_time_statusbar = tqdm(total=len(temp_mass), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
-        with ThreadPoolExecutor(max_workers=25) as executor:
+        with ThreadPoolExecutor(max_workers=max_workers) as executor:
             arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10): link for link in temp_mass}
             for future in concurrent.futures.as_completed(arrive_time):
                 try:
@@ -511,4 +520,4 @@ if __name__ == '__main__':
 
     # Запуск основной функции
     # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False)
+    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30, deep_step_work=2)

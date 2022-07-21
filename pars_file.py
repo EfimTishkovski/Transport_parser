@@ -441,6 +441,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
                     arrive_time_mass.append({'' : ''})
                     arrive_time_statusbar.update()
                     no_load_page_count += 1
+                    print(f'Недогружено {no_load_page_count} страниц')
                 else:
                     arrive_time_mass.append(data)
                     arrive_time_statusbar.update()
@@ -471,9 +472,11 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
         base.commit()
         print('OK')
 
+    # Дописать обработку недогрузки страниц
+
     # Проверка на "битые данные" по времени отправления
     if correct_data_test:
-        query_to_data_from_base = "SELECT * FROM tram_main_data"
+        query_to_data_from_base = "SELECT * FROM main_data"
         cursor.execute(query_to_data_from_base)
         data_mass = cursor.fetchall()
         incorrect_data_num = 0  # Счётчик битых строк
@@ -519,7 +522,7 @@ if __name__ == '__main__':
     URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
 
     BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
-    BASE_BUS = 'bus_data.db'  # База с данными о автобусах
+    BASE_BUS = 'bus_data.db'    # База с данными о автобусах
     BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
 
     # Запуск основной функции

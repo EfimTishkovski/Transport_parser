@@ -350,6 +350,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
     time.sleep(0.3) # Задержка для более ровного вывода
     # Получение данных об остановках
     # [{маршрут0 : {'Прямое направление : {'остановка' : ссылка, ...}, 'Обратное направление' : {'остановка' : ссылка, ...}}}, {маршрут1 : ...}]
+    no_load_page = 0
     if flag_launch:
         try:
             size = len(routs_data)
@@ -363,6 +364,8 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
                         data = future.result()
                     except:
                         stops_data.append({})
+                        no_load_page += 1
+                        print('Странца не догружена, всего:', no_load_page)
                         s_bar.update()
                     else:
                         stops_data.append(data)
@@ -400,6 +403,14 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
     if deep_step_work < 3:
         flag_launch = False
         arrive_time_mass = []  # Массив для полученных данных
+
+    print('Данные по остановкам получены, строк:', len(stops_data))
+    print('Продолжить (yes/no)')
+    user_answer = input()
+    if user_answer == 'yes' or 'y':
+        pass
+    else:
+        flag_launch = False
 
     # Получение времени отправления по остановкам
     no_load_page_count = 0   # Недогруженные страницы

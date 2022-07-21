@@ -521,4 +521,4 @@ if __name__ == '__main__':
 
     # Запуск основной функции
     # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=35, deep_step_work=3)
+    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=40, deep_step_work=3)

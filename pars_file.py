@@ -402,15 +402,15 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
                     for name_station, link_first in stops.items():
                         temp_mass.append(link_first)
 
-        temp_mass_1 = []
-        for i in range(400):
-            temp_mass_1.append(temp_mass[i])
+        #temp_mass_1 = []
+        #for i in range(2812):
+            #temp_mass_1.append(temp_mass[i])
 
-        arrive_time_statusbar = tqdm(total=len(temp_mass_1), colour='yellow',
+        arrive_time_statusbar = tqdm(total=len(temp_mass), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
-        with ThreadPoolExecutor(max_workers=15) as executor:
-            arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10): link for link in temp_mass_1}
+        with ThreadPoolExecutor(max_workers=25) as executor:
+            arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10): link for link in temp_mass}
             for future in concurrent.futures.as_completed(arrive_time):
                 try:
                     data = future.result()
@@ -427,7 +427,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=True
         print('Ошибка, данные о времени отправления не получены')
 
 
-    # Временный вывод
+    # Счётчик недогруженных строк
     no_load_page_count = 0
     for line in arrive_time_mass:
         items = list(line.items())

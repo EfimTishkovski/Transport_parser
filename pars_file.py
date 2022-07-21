@@ -152,7 +152,7 @@ def get_time_list(URL, wait_time=3, iteration=5):
                 button_monday = driver.find_element(By.XPATH,
                                                          f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
                 button_monday.click()  # Щёлкает по кнопкам дней недели
-                time.sleep(0.2)
+                time.sleep(0.3)
                 data_from_time_list = driver.find_element(By.ID, 'schedule')
                 data_mass = data_from_time_list.text.split('\n')
                 data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
@@ -395,13 +395,14 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
         else:
             print('OK')
 
-    time.sleep(0.5)
+    time.sleep(0.3)
 
     if deep_step_work < 3:
         flag_launch = False
         arrive_time_mass = []  # Массив для полученных данных
 
     # Получение времени отправления по остановкам
+    no_load_page_count = 0   # Недогруженные страницы
     if flag_launch:
         temp_mass = []        # Временный массив для данных для ссылок
         arrive_time_mass = []  # Массив для полученных данных
@@ -416,6 +417,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
         #for i in range(2812):
             #temp_mass_1.append(temp_mass[i])
 
+
         arrive_time_statusbar = tqdm(total=len(temp_mass), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
@@ -427,6 +429,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
                 except:
                     arrive_time_mass.append({'' : ''})
                     arrive_time_statusbar.update()
+                    no_load_page_count += 1
                 else:
                     arrive_time_mass.append(data)
                     arrive_time_statusbar.update()
@@ -436,19 +439,8 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
         flag_launch = False
         print('Ошибка, данные о времени отправления не получены')
 
-
-    # Счётчик недогруженных строк
-    no_load_page_count = 0
-    for line in arrive_time_mass:
-        items = list(line.items())
-        if items[0][1] == '':
-            no_load_page_count += 1
-        #print(line)
-
-
     if no_load_page_count > 0:
         print('Есть недогруженные страницы, количество:', no_load_page_count)
-
 
     if flag_launch:
         # Сохранение в файл
@@ -521,4 +513,4 @@ if __name__ == '__main__':
 
     # Запуск основной функции
     # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=40, deep_step_work=3)
+    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30, deep_step_work=3)

@@ -413,7 +413,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
         flag_launch = False
 
     # Получение времени отправления по остановкам
-    no_load_page_count = 0   # Недогруженные страницы
+
     if flag_launch:
         temp_mass = []        # Временный массив для данных для ссылок
         arrive_time_mass = []  # Массив для полученных данных
@@ -433,15 +433,14 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10): link for link in temp_mass}
+            arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10):
+                               link for link in temp_mass}
             for future in concurrent.futures.as_completed(arrive_time):
                 try:
                     data = future.result()
                 except:
                     arrive_time_mass.append({'' : ''})
                     arrive_time_statusbar.update()
-                    no_load_page_count += 1
-                    print(f'Недогружено {no_load_page_count} страниц')
                 else:
                     arrive_time_mass.append(data)
                     arrive_time_statusbar.update()
@@ -458,29 +457,28 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
             with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
                 json.dump(arrive_time_mass, temp_file)
     """
-
+    # Запись результатов в базу и подсчёт недогруженных страниц
+    no_load_page_count = 0  # Недогруженные страницы
     if flag_launch:
         # Запись в базу
         for line in arrive_time_mass:
             link = list(line.items())[0][0]
             arr_time = list(line.items())[0][1]
             if arr_time == '':
-                continue
-            query = "UPDATE main_data SET time = ? WHERE time = ?"
-            parametrs = (str(arr_time), str(link))
-            cursor.execute(query, parametrs)
+                no_load_page_count += 1
+            else:
+                query = "UPDATE main_data SET time = ? WHERE time = ?"
+                parameters = (str(arr_time), str(link))
+                cursor.execute(query, parameters)
         base.commit()
         print('OK')
 
     if no_load_page_count > 0:
         print('Есть недогруженные страницы, количество:', no_load_page_count)
+        # кусок кода для догрузки недостающих данных
     else:
         print('Все страницы загружены')
 
-    
-
-
-    # Дописать обработку недогрузки страниц
 
     # Проверка на "битые данные" по времени отправления
     if correct_data_test:

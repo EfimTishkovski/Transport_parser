@@ -451,15 +451,15 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
         flag_launch = False
         print('Ошибка, данные о времени отправления не получены')
 
-    if no_load_page_count > 0:
-        print('Есть недогруженные страницы, количество:', no_load_page_count)
-
+    """
     if flag_launch:
-        # Сохранение в файл
+        # Сохранение в файл ? может это лишнее
         if reserve_file_copy:
             with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
                 json.dump(arrive_time_mass, temp_file)
+    """
 
+    if flag_launch:
         # Запись в базу
         for line in arrive_time_mass:
             link = list(line.items())[0][0]
@@ -471,6 +471,14 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
             cursor.execute(query, parametrs)
         base.commit()
         print('OK')
+
+    if no_load_page_count > 0:
+        print('Есть недогруженные страницы, количество:', no_load_page_count)
+    else:
+        print('Все страницы загружены')
+
+    
+
 
     # Дописать обработку недогрузки страниц
 

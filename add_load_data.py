@@ -4,6 +4,7 @@ from pars_file import get_time_list
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 
+
 def main_add_load_func(name_database, max_workers=20):
 
     connection = sqlite3.connect(name_database)
@@ -19,7 +20,7 @@ def main_add_load_func(name_database, max_workers=20):
     endless_loop_count = 0
     while len(link_data) != 0:
         # Досрочное завершение цикла, только на момент отладки
-        if endless_loop_count == 3:
+        if endless_loop_count == 1:
             print(f'Цикл завершён на {endless_loop_count} итерации')
             return True
 
@@ -28,6 +29,8 @@ def main_add_load_func(name_database, max_workers=20):
         cursor.execute(get_link_query)
         data_from_base = cursor.fetchall()
         link_data = [element[0] for element in data_from_base if element[0][0:5] == 'https']
+
+        print(f'Найдено {len(link_data)} недогруженных страниц')
 
         # Парсинг
         s_bar = tqdm(total=len(link_data), colour='orange', desc='Повторная загрузка страниц')
@@ -65,5 +68,4 @@ def main_add_load_func(name_database, max_workers=20):
 
 
 if __name__ == '__main__':
-    mass = main_add_load_func('trolleybus_data.db')
-    print(len(mass))
+    main_add_load_func('trolleybus_data.db')

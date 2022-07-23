@@ -208,7 +208,7 @@ def stop_func(base_object, cursor_object):
     base_object.close()
     print('Соединения закрыты')
 
-
+###################################### Блок вынесен в отдельный файл
 def hours_digit_test(mass):
     """
     Функция проверки корректности значений часов в массиве
@@ -269,7 +269,7 @@ def correct_time_data(data_dikt):
         else:
             return False, error_hours_digit_test
     return True, ''
-
+###################################### Блок вынесен в отдельный файл
 
 def defense_of_noload():
     pass

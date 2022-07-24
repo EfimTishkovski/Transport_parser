@@ -13,17 +13,22 @@ def hours_digit_test(mass):
     :return: True or False и сообщение об ошибке
     """
     for digit in mass:
+        # проверка на длину строки
+        if len(digit) > 2:
+            return False, f'Слишком много символов: {digit}'
+
         # Проверка на "число"
         if digit.isdigit():
             pass
         else:
-            return False, 'Нечисло'
+            return False, f'Недопустимый символ: {digit}'
+
         # Проверка на нахождение числа в рамках 0 - 23
         if digit != ' ' and len(digit) <= 2 and 0 <= int(digit) <= 23:
             continue
         else:
             return False, 'Часы не в рамках 0 < 23'
-    # Проверка на 00 в конце в 24 часовом формате
+    # Проверка на 00 в конце в 24 часовом формате возможно эта проверка лишняя?
     if int(mass[-1]) == 0:
         n = 2
     else:
@@ -109,6 +114,4 @@ def fix_func(data):
 
 
 if __name__ == '__main__':
-    #search_problem_data_func('trolleybus_data.db')
-    data = pars_file.get_time_list('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/22/stops/62413/1')
-    print(data)
+   mass = search_problem_data_func('trolleybus_data.db')

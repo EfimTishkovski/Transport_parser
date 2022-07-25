@@ -2,8 +2,11 @@ import concurrent.futures
 import json
 import time
 import sqlite3
+
+import selenium
 from selenium import webdriver
 from selenium.webdriver.common.by import By
+
 import ast
 import tqdm
 from concurrent.futures import ThreadPoolExecutor
@@ -194,7 +197,8 @@ def get_time_list_inner_driver(URL, wait_time=3, iteration=8):
                     # Обработка сложного, не стандартного массива
                     out_data_mass[week_days[day]] = complex_mass(data_mass)
                 break
-            except:
+            except Exception as error:
+                print(error)
                 continue
         else:
             driver.quit()
@@ -203,9 +207,4 @@ def get_time_list_inner_driver(URL, wait_time=3, iteration=8):
     return out_data_mass
 
 if __name__ == '__main__':
-
-    mass = [{'link' : 'time'}, {'link1' : 'new_time'}]
-
-    for element in mass:
-        link = list(element.items())
-        print(link[0][0])
+    get_time_list_inner_driver('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')

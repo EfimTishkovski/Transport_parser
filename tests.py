@@ -206,5 +206,21 @@ def get_time_list_inner_driver(URL, wait_time=3, iteration=8):
     driver.quit()
     return out_data_mass
 
+def find_desable_button(URL):
+
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+
+    driver.get(URL)  # Подгружаем страницу
+    time.sleep(3)
+
+    button_monday = driver.find_element(By.CLASS_NAME, 'btn btn-default btn-big day-of-week ng-binding disabled')
+    print(button_monday.text)
+    #button_monday.click()  # Щёлкает по кнопкам дней недели
+
+
+
 if __name__ == '__main__':
-    get_time_list_inner_driver('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
+    #get_time_list_inner_driver('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
+    find_desable_button('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')

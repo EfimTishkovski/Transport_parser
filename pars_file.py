@@ -143,8 +143,11 @@ def get_time_list(URL, wait_time=3, iteration=5):
     time.sleep(wait_time)
     week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
                  5: 'Пятница', 6: 'Суббота', 7: 'Воскресенье'}
+
     temp_time = {}
     out_data_mass = {}
+
+    # Переписать, защита не работает, поменять циклы местами.
     for day in range(1, 8):
         for i in range(iteration):
             try:

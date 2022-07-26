@@ -234,9 +234,9 @@ def half_week_rout(URL, wait_time=3, iteration=8):
                     for i in range(0, len(data_mass) - 1, 2):
                         temp_time[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
                         out_data_mass[week_days[day]] = temp_time.copy()
-
-                    driver.quit()
-                    return out_data_mass  # Успешная отработка цикла
+            else:
+                driver.quit()
+                return out_data_mass  # Успешная отработка цикла
 
         except Exception as error_mess:
             #print(error_mess)

@@ -29,7 +29,7 @@ def launch(base_name, attempts=3):
                 break  # Выход из цикла если соединение установлено
             except Exception as exc:
                 print(exc)
-                time.sleep(2)  # Задержка перед следующей попыткой
+                time.sleep(2)  # Задержка перед следующей попыткой  ?
         else:
             print('Ошибка инициализации: нет соединения с сайтом')
             return False
@@ -274,14 +274,13 @@ def correct_time_data(data_dikt):
     return True, ''
 ###################################### Блок вынесен в отдельный файл
 
-def defense_of_noload():
-    pass
 
-
-def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=False, max_workers=20, deep_step_work=3):
+def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=False, max_workers=20, deep_step_work=3):
     """
     Главня функция парсинга
-    :param URL: Ссылка (автобус, троллейбус, трамвай)
+    :param deep_step_work: позволяет работать функции по частям, на время отладки
+    :param max_workers: количество потоков
+    :param url: Ссылка (автобус, троллейбус, трамвай)
     :param base_name: Имя файла с базой данных
     :param reserve_file_copy: Резервное промежуточное копирование в файлы
     :param correct_data_test: проверка корректности времени отправления
@@ -300,7 +299,8 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
     else:
         deep_step_work = 3
 
-    # Дописать проверку файла базы данных и/или его создание
+    # Дописать проверку наличия файла базы данных или его создание
+    # файлы: tram_data.db, trolleybus_data.db, bus_data.db
 
     # Информационные сообщения
     if reserve_file_copy:
@@ -322,7 +322,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
     if flag_launch:
         for i in range(iteration):
             try:
-                routs_data = routs(url=URL, delay=speed)
+                routs_data = routs(url=url, delay=speed)
                 break
             except:
                 continue

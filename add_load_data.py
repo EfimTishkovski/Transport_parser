@@ -14,6 +14,14 @@ import time
 
 def half_week_rout(url, wait_time=3, iteration=8):
 
+    """
+    Функция получения времени отправления по маршрутам, которые ходят не каждый день.
+    :param url: Ссыдка на страницу с маршрутом
+    :param wait_time: задержка для догрузки страницы
+    :param iteration: количество повторений для догрузки
+    :return: словарь ссылка : данные
+    """
+
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(argument='--headless')
     driver = webdriver.Chrome(options=chrome_options)

@@ -365,7 +365,7 @@ def main_get_data(URL, base_name, reserve_file_copy=True, correct_data_test=Fals
                     except:
                         stops_data.append({})
                         no_load_page += 1
-                        print('Странца не догружена, всего:', no_load_page)
+                        print('Страница не догружена, всего:', no_load_page)
                         s_bar.update()
                     else:
                         stops_data.append(data)

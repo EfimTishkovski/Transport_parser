@@ -182,20 +182,12 @@ def get_time_list_inner_driver(URL, wait_time=3, iteration=8):
                 data_mass = data_from_timelist.text.split('\n')
                 data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
                 # Сортировка данных
-                # Проверка на "не стандартные данные"
-                not_standart_data_flag = False
-                for i in range(0, len(data_mass) - 1):
-                    if len(data_mass[i]) < len(data_mass[i + 1]):
-                        not_standart_data_flag = True
-                        break
-                if not_standart_data_flag:
-                    # Обработка стандартного массива
-                    for i in range(0, len(data_mass) - 1, 2):
-                        temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
-                        out_data_mass[week_days[day]] = temp_time_1.copy()
-                else:
-                    # Обработка сложного, не стандартного массива
-                    out_data_mass[week_days[day]] = complex_mass(data_mass)
+
+                # Обработка стандартного массива
+                for i in range(0, len(data_mass) - 1, 2):
+                    temp_time_1[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
+                    out_data_mass[week_days[day]] = temp_time_1.copy()
+
                 break
             except Exception as error:
                 print(error)
@@ -206,21 +198,54 @@ def get_time_list_inner_driver(URL, wait_time=3, iteration=8):
     driver.quit()
     return out_data_mass
 
-def find_desable_button(URL):
+def half_week_rout(URL, wait_time=3, iteration=8):
 
     chrome_options = webdriver.ChromeOptions()
     chrome_options.add_argument(argument='--headless')
     driver = webdriver.Chrome(options=chrome_options)
 
-    driver.get(URL)  # Подгружаем страницу
-    time.sleep(3)
+    week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
+                 5: 'Пятница', 6: 'Суббота', 7: 'Воскресенье'}
 
-    button_monday = driver.find_element(By.CLASS_NAME, 'btn btn-default btn-big day-of-week ng-binding disabled')
-    print(button_monday.text)
-    #button_monday.click()  # Щёлкает по кнопкам дней недели
+    temp_time = {}
+    out_data_mass = {}
 
+    for i in range(iteration):
+        try:
+            driver.get(URL)  # Подгружаем страницу
+            time.sleep(wait_time)
+            temp_time.clear()
+            out_data_mass.clear()
+            for day in range(1,8):
+                # Проверка кнопки на активность
+                button_info = driver.find_element(By.XPATH,
+                f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]').get_attribute('class')
+                if 'disabled' in button_info:
+                    out_data_mass[week_days[day]] = 'В этот день не ходит'
+                else:
+                    button = driver.find_element(By.XPATH,
+                                f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
+                    button.click()     # Щёлкает по кнопкам дней недели
+                    time.sleep(0.3)
+                    data_from_timelist = driver.find_element(By.ID, 'schedule')
+                    data_mass = data_from_timelist.text.split('\n')
+                    data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
+                    # Сортировка данных
+                    for i in range(0, len(data_mass) - 1, 2):
+                        temp_time[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
+                        out_data_mass[week_days[day]] = temp_time.copy()
+
+                    driver.quit()
+                    return out_data_mass  # Успешная отработка цикла
+
+        except Exception as error_mess:
+            #print(error_mess)
+            continue
+    else:
+        driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
+        return ''
 
 
 if __name__ == '__main__':
-    #get_time_list_inner_driver('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
-    find_desable_button('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
+    data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
+    print(data)

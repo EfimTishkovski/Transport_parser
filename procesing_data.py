@@ -52,10 +52,20 @@ def correct_time_data(data_dikt):
     """
     week_days_mass = []  # массив с днями недели
     tims_mass = []  # Массив с расписанием по дням недели
+
+    days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+            'Пятница', 'Суббота', 'Воскресенье']
+
     # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
     for week_days, tims in data_dikt.items():
         week_days_mass.append(week_days)
         tims_mass.append(tims)
+
+    # Проверка на наличие всех дней недели
+    diff = list(set(days).difference(set(week_days_mass)))
+    if diff:
+        return False, f'Нехватает дней {diff}'
+
     if len(tims_mass) != len(week_days_mass):
         return False, 'Пропущен день недели'
 
@@ -65,18 +75,22 @@ def correct_time_data(data_dikt):
     for line in tims_mass:
         hours_mass.clear()
         minute_mass.clear()
+
+        if line == 'В этот день не ходит':
+            continue
+
         for hour, minute in line.items():
             hours_mass.append(hour)
             minute_mass.append(minute)
         if len(hours_mass) != len(minute_mass):
             return False, 'Количество часов и массивов минут не совпадают'
-        # Проверка на корректность часов в расписании
-        hours_flag, error_hours_digit_test = hours_digit_test(hours_mass)
-        if hours_flag:
-            return True, ''
-        else:
-            return False, error_hours_digit_test
-    return True, ''
+    # Проверка на корректность часов в расписании
+    hours_flag, error_hours_digit_test = hours_digit_test(hours_mass)
+    if hours_flag:
+        return True, ''
+    else:
+        return False, error_hours_digit_test
+    #return True, ''
 
 def search_problem_data_func(name_base):
     """

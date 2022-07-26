@@ -92,16 +92,6 @@ def complex_mass(mass):
         temp.clear()
     return out
 
-def write_base(mass, base, cursor, table):
-    """
-    Функция записи в базу
-    :param mass: Массив данных для записи
-    :param base: Объект базы
-    :param base: Объект курсора
-    :param table: Задействованная таблица базы
-    :return:
-    """
-    pass
 
 def hours_digit_test(mass):
     for digit in mass:
@@ -126,12 +116,25 @@ def hours_digit_test(mass):
 def correct_time_data(data_dikt):
     week_days_mass = []  # массив с днями недели
     tims_mass = []       # Массив с расписанием по дням недели
+
+    days = ['Понедельник', 'Вторник', 'Среда', 'Четверг',
+                'Пятница', 'Суббота', 'Воскресенье']
+
+
     # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
     for week_days, tims in data_dikt.items():
         week_days_mass.append(week_days)
         tims_mass.append(tims)
+
+    # Проверка на наличие всех дней недели
+    diff = list(set(days).difference(set(week_days_mass)))
+    if diff:
+        return False, f'Нехватает дней {diff}'
+
+
     if len(tims_mass) != len(week_days_mass):
         return False, 'Пропущен день недели'
+
 
     # Проверка 2 каждому часу соответствует массив с минутами
     hours_mass = []  # Массив для часов
@@ -139,11 +142,16 @@ def correct_time_data(data_dikt):
     for line in tims_mass:
         hours_mass.clear()
         minute_mass.clear()
+
+        if line == 'В этот день не ходит':
+            continue
+
         for hour, minute in line.items():
             hours_mass.append(hour)
             minute_mass.append(minute)
         if len(hours_mass) != len(minute_mass):
             return False, 'Количество часов и массивов минут не совпадают'
+
         # Проверка на корректность часов в расписании
         hours_flag, error_hours_digit_test = hours_digit_test(hours_mass)
         if hours_flag:
@@ -249,3 +257,14 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 if __name__ == '__main__':
     data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
     print(data)
+
+    """
+    rez = correct_time_data({'Понедельник': 'В этот день не ходит',
+                             'Вторник': 'В этот день не ходит',
+                             'Среда': 'В этот день не ходит',
+                             'Четверг': 'В этот день не ходит',
+                             'Пятница': 'В этот день не ходит',
+                             'Суббота': {'06': ('34', '49'), '12': ('22',), '13': ('00', '36'), '16': ('42',), '17': ('19', '56')}})
+
+    print(rez)
+    """

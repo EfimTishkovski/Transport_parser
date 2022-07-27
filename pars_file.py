@@ -124,7 +124,8 @@ def stops_transport_info(data, delay=2, iteration=5):
 def get_time_list(url, wait_time=3, iteration=5):
     """
     Функция получения времени отправления по остановке
-    :param URL: ссылка на страницу
+    :param url: ссылка на страницу
+    :param wait_time: задержка при загрузке страницы
     :param iteration: Количество попыток загрузки страницы
     :return: словарь с днями недели и временем отправления или '' если не удалось получить данные
     """
@@ -224,8 +225,8 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     :return:
     """
     # Настройки
-    speed = 3  # Задержка для загрузки страницы
-    iteration = 10  # Количество повторений при недогрузке страницы
+    wait_time = 2  # Задержка для загрузки страницы
+    iteration = 5  # Количество повторений при недогрузке страницы
 
     # Соединение с базой
     base = sqlite3.connect(base_name)
@@ -245,7 +246,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     if flag_launch:
         for i in range(iteration):
             try:
-                routs_data = routs(url=url, delay=speed)
+                routs_data = routs(url=url, delay=wait_time)
                 break
             except:
                 continue
@@ -284,8 +285,8 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
             stops_data = []
             s_bar = tqdm(total=size, colour='yellow', desc='Остановки')
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
-                stops_info = {executor.submit(stops_transport_info, data=line, delay=3, iteration=8): line for line in
-                              routs_data.items()}
+                stops_info = {executor.submit(stops_transport_info, data=line, delay=wait_time, iteration=iteration):
+                                  line for line in routs_data.items()}
                 for future in concurrent.futures.as_completed(stops_info):
                     try:
                         data = future.result()
@@ -350,14 +351,14 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                         temp_mass.append(link_first)
 
         temp_mass_1 = []
-        for i in range(1000):
+        for i in range(100):
             temp_mass_1.append(temp_mass[i])
 
         arrive_time_statusbar = tqdm(total=len(temp_mass_1), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            arrive_time = {executor.submit(get_time_list, url=link, wait_time=speed, iteration=10):
+            arrive_time = {executor.submit(get_time_list, url=link, wait_time=wait_time, iteration=iteration):
                                link for link in temp_mass_1}
             for future in concurrent.futures.as_completed(arrive_time):
                 try:
@@ -459,4 +460,4 @@ if __name__ == '__main__':
     # Запуск основной функции
     if net_flag and data_base_flag:
         # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-        main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30)
+        main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=20)

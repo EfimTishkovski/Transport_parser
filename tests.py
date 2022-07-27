@@ -258,12 +258,6 @@ if __name__ == '__main__':
     #data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
     #print(data)
 
-    base = sqlite3.connect('trolleybus_data.db')
-    cursor = base.cursor()
-
-    num_query = 'SELECT count(*) FROM main_data'
-    cursor.execute(num_query)
-    lines = cursor.fetchone()[0]
-
-    print('Данные по остановкам получены, строк:', lines)
+    data = pars_file.get_time_list('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1/stops/9565/0', wait_time=2)
+    print(data)
 

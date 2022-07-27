@@ -126,7 +126,7 @@ def stops_transport_info(data, delay=2, iteration=5):
     return station_data
 
 
-def get_time_list(URL, wait_time=3, iteration=5):
+def get_time_list(url, wait_time=3, iteration=5):
     """
     Функция получения времени отправления по остановке
     :param URL: ссылка на страницу
@@ -139,8 +139,6 @@ def get_time_list(URL, wait_time=3, iteration=5):
     chrome_options.add_argument(argument='--headless')
     driver = webdriver.Chrome(options=chrome_options)
 
-    driver.get(URL)  # Подгружаем страницу
-    time.sleep(wait_time)
     week_days = {1: 'Понедельник', 2: 'Вторник', 3: 'Среда', 4: 'Четверг',
                  5: 'Пятница', 6: 'Суббота', 7: 'Воскресенье'}
 
@@ -148,29 +146,33 @@ def get_time_list(URL, wait_time=3, iteration=5):
     out_data_mass = {}
 
     # Переписать, защита не работает, поменять циклы местами.
-    for day in range(1, 8):
-        for i in range(iteration):
-            try:
-                temp_time.clear()
-                button_monday = driver.find_element(By.XPATH,
-                                                         f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
-                button_monday.click()  # Щёлкает по кнопкам дней недели
+    for i in range(iteration):
+        try:
+            driver.get(url)  # Подгружаем страницу
+            time.sleep(wait_time)
+            temp_time.clear()
+            out_data_mass.clear()
+            for day in range(1, 8):
+                button = driver.find_element(By.XPATH,
+                                                 f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
+                button.click()  # Щёлкает по кнопкам дней недели
                 time.sleep(0.3)
-                data_from_time_list = driver.find_element(By.ID, 'schedule')
-                data_mass = data_from_time_list.text.split('\n')
+                data_from_timelist = driver.find_element(By.ID, 'schedule')
+                data_mass = data_from_timelist.text.split('\n')
                 data_mass.pop(0)  # Убираем первый элемент "часы минуты" это лишнее
                 # Сортировка данных
                 for i in range(0, len(data_mass) - 1, 2):
                     temp_time[data_mass[i]] = tuple(data_mass[i + 1].split(' '))
                     out_data_mass[week_days[day]] = temp_time.copy()
-                break
-            except Exception:
-                continue
-        else:
-            driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
-            return {URL : ''}
-    driver.quit()          # Закрытие драйвера если цикл завершён нормально
-    return {URL : out_data_mass}
+            else:
+                driver.quit()
+                return {url: out_data_mass}  # Успешная отработка цикла
+
+        except Exception:
+            continue
+    else:
+        driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
+        return {url: ''}
 
 ################################### Проверить и тоже вынести в отдельный файл
 def complex_mass(mass):
@@ -334,21 +336,15 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
             print('OK')
 
     time.sleep(0.3)
-
+    # Подсчёт количества записей в таблице
     num_query = 'SELECT count(*) FROM main_data'
     cursor.execute(num_query)
     lines = cursor.fetchone()[0]
-
     print('Данные по остановкам получены, строк:', lines)
-    print('Продолжить (yes/no)')
-    user_answer = input()
-    if user_answer == 'yes' or 'y':
-        pass
-    else:
-        flag_launch = False
+
+    flag_launch = False
 
     # Получение времени отправления по остановкам
-
     if flag_launch:
         temp_mass = []        # Временный массив для данных для ссылок
         arrive_time_mass = []  # Массив для полученных данных
@@ -381,13 +377,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
         flag_launch = False
         print('Ошибка, данные о времени отправления не получены')
 
-    """
-    if flag_launch:
-        # Сохранение в файл ? может это лишнее
-        if reserve_file_copy:
-            with open('temp_out.txt', 'w', encoding='utf-8') as temp_file:
-                json.dump(arrive_time_mass, temp_file)
-    """
     # Запись результатов в базу и подсчёт недогруженных страниц
     no_load_page_count = 0  # Недогруженные страницы
     if flag_launch:
@@ -409,47 +398,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     else:
         print('Все страницы загружены')
 
-
-
     # Проверка не корректных данных вынесена в отдельный файл
-    """
-    # Проверка на "битые данные" по времени отправления
-    if correct_data_test:
-        query_to_data_from_base = "SELECT * FROM main_data"
-        cursor.execute(query_to_data_from_base)
-        data_mass = cursor.fetchall()
-        incorrect_data_num = 0  # Счётчик битых строк
-        statusbar = tqdm(total=len(data_mass), colour='yellow')
-        problem_mass = []  # Массив для битых строк
-        for line in data_mass:
-            time_dikt = literal_eval(line[3])  # Магия преобразования строки в словарь
-            rezult, out_error = correct_time_data(time_dikt)
-            statusbar.update()
-            if rezult:
-                continue
-            else:
-                problem_mass.append((line[0], line[1], line[2], out_error))
-                incorrect_data_num += 1
-        statusbar.close()
-        time.sleep(0.5)
-
-        # Вывод информации по битым строкам
-        # Добавить исправление не корректных строк
-        if problem_mass:
-            print('Битых строк', incorrect_data_num, 'Из', len(data_mass))
-            print('Показать проблемные строки? (да, yes, y / нет, no, n)')  # Запрос к юзеру
-            answer_from_user = str(input())
-            # Показать проблемные строки
-            if answer_from_user:
-                print('Проблемные строки')
-                for element in problem_mass:
-                    print(element)
-        else:
-            print('Проблемных строк не обнаружено')
-
-    else:
-        print('Проверка корректности данных отменена')
-    """
 
     stop_func(base_object=base, cursor_object=cursor)
     print('Завершение работы')

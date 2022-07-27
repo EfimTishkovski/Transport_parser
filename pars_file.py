@@ -26,7 +26,7 @@ def launch():
                 driver.get('https://minsktrans.by/')
                 print('Есть соединение с сайтом')
                 driver.quit()
-                return True # Выход из цикла если соединение установлено
+                return True  # Выход из цикла если соединение установлено
             except Exception as exc:
                 print(exc)
                 time.sleep(2)  # Задержка перед следующей попыткой  ?
@@ -119,6 +119,7 @@ def stops_transport_info(data, delay=2, iteration=5):
     driver.quit()
     return station_data
 
+
 # Функция получения расписания по остановкам
 def get_time_list(url, wait_time=3, iteration=5):
     """
@@ -148,7 +149,7 @@ def get_time_list(url, wait_time=3, iteration=5):
             out_data_mass.clear()
             for day in range(1, 8):
                 button = driver.find_element(By.XPATH,
-                                                 f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
+                                             f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
                 button.click()  # Щёлкает по кнопкам дней недели
                 time.sleep(0.3)
                 data_from_timelist = driver.find_element(By.ID, 'schedule')
@@ -167,6 +168,7 @@ def get_time_list(url, wait_time=3, iteration=5):
     else:
         driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
         return {url: ''}
+
 
 ################################### Проверить и тоже вынести в отдельный файл
 def complex_mass(mass):
@@ -194,6 +196,8 @@ def complex_mass(mass):
         out[hour] = tuple(temp.copy())
         temp.clear()
     return out
+
+
 ################################### Проверить и тоже вынести в отдельный файл
 
 # Функция закрытия соединений
@@ -220,8 +224,8 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     :return:
     """
     # Настройки
-    speed = 3      # Задержка для загрузки страницы
-    iteration = 10 # Количество повторений при недогрузке страницы
+    speed = 3  # Задержка для загрузки страницы
+    iteration = 10  # Количество повторений при недогрузке страницы
 
     # Соединение с базой
     base = sqlite3.connect(base_name)
@@ -235,7 +239,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
 
     if correct_data_test:
         print('Проверка корректности данных включена')
-
 
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
@@ -270,7 +273,8 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
             print('Ошибка сохранения данных о маршрутах')
         else:
             print('OK')
-    time.sleep(0.3) # Задержка для более ровного вывода
+    time.sleep(0.3)  # Задержка для более ровного вывода
+
     # Получение данных об остановках
     # [{маршрут0 : {'Прямое направление : {'остановка' : ссылка, ...}, 'Обратное направление' : {'остановка' : ссылка, ...}}}, {маршрут1 : ...}]
     no_load_page = 0
@@ -288,7 +292,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                     except:
                         stops_data.append({})
                         no_load_page += 1
-                        print('Страница не догружена, всего:', no_load_page)
                         s_bar.update()
                     else:
                         stops_data.append(data)
@@ -296,6 +299,10 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
             s_bar.close()
         except:
             print('Ошибка, данные об остановках не получены')
+
+    if no_load_page > 0:
+        print('Есть недогруженные страницы, количество:', no_load_page)
+
     # Сохранение данных
     if flag_launch:
         try:
@@ -333,7 +340,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
 
     # Получение времени отправления по остановкам
     if flag_launch:
-        temp_mass = []        # Временный массив для данных для ссылок
+        temp_mass = []  # Временный массив для данных для ссылок
         arrive_time_mass = []  # Массив для полученных данных
 
         for element_rout in stops_data:
@@ -341,7 +348,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 for direction, stops in rout.items():
                     for name_station, link_first in stops.items():
                         temp_mass.append(link_first)
-
 
         arrive_time_statusbar = tqdm(total=len(temp_mass), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
@@ -353,7 +359,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 try:
                     data = future.result()
                 except:
-                    arrive_time_mass.append({'' : ''})
+                    arrive_time_mass.append({'': ''})
                     arrive_time_statusbar.update()
                 else:
                     arrive_time_mass.append(data)
@@ -392,6 +398,14 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
 
 
 def data_base_file(base_bus, base_trolleybus, base_tram):
+    """
+    Функция проверки баз и таблиц в базах, если нет, то создание.
+    :param base_bus:  Файл базы с автобусами
+    :param base_trolleybus: Файл базы с троллейбусами
+    :param base_tram: Файл базы с трамваями
+    :return: try or false
+    """
+
     base = [base_bus, base_trolleybus, base_tram]
 
     try:
@@ -420,6 +434,7 @@ def data_base_file(base_bus, base_trolleybus, base_tram):
         print('Базы в порядке')
         return True
 
+
 if __name__ == '__main__':
     # Ссылки на транспорт
     URL_BUS = ''  # Автобусы
@@ -427,7 +442,7 @@ if __name__ == '__main__':
     URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
 
     # Файлы с базами
-    BASE_BUS = 'bus_data.db'    # База с данными о автобусах
+    BASE_BUS = 'bus_data.db'  # База с данными о автобусах
     BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
     BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
 

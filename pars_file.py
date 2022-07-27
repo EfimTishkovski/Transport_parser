@@ -121,7 +121,7 @@ def stops_transport_info(data, delay=2, iteration=5):
         except:
             continue
     else:
-        station_data = {name_rout: {'Прямое направление': '', 'Обратное направление': ''}}
+        station_data = {name_rout: {'Прямое направление': '', 'Обратное направление': ''}}  # НЕ успешное завершение
     driver.quit()
     return station_data
 
@@ -172,7 +172,7 @@ def get_time_list(URL, wait_time=3, iteration=5):
     driver.quit()          # Закрытие драйвера если цикл завершён нормально
     return {URL : out_data_mass}
 
-
+################################### Проверить и тоже вынести в отдельный файл
 def complex_mass(mass):
     """
     Функция обработки нестандартного массива данных
@@ -198,7 +198,7 @@ def complex_mass(mass):
         out[hour] = tuple(temp.copy())
         temp.clear()
     return out
-
+################################### Проверить и тоже вынести в отдельный файл
 
 def stop_func(base_object, cursor_object):
     """
@@ -211,74 +211,10 @@ def stop_func(base_object, cursor_object):
     base_object.close()
     print('Соединения закрыты')
 
-###################################### Блок вынесен в отдельный файл
-def hours_digit_test(mass):
-    """
-    Функция проверки корректности значений часов в массиве
-    :param mass: Массив с данными для анализа
-    :return: True or False и сообщение об ошибке
-    """
-    for digit in mass:
-        if digit != ' ' and len(digit) <= 2 and 0 <= int(digit) <= 23:
-            continue
-        else:
-            return False, 'Часы не в рамках 0 < 23'
-    # Проверка на 00 в конце в 24 часовом формате
-    if int(mass[-1]) == 0:
-        n = 2
-    else:
-        n = 1
-    # Проверка на не убывание часов, что идут по порядку
-    for i in range(len(mass) - n):
-        if mass[i] < mass[i + 1]:
-            continue
-        else:
-            return False, 'Часы расположены не по порядку'
-    else:
-        out_flag = True
-    return out_flag, ''
 
-
-def correct_time_data(data_dikt):
-    """
-    Функция проверки на корректность данных о времени отправления с остановки
-    :param data_dikt: Входные данные в виде словаря
-    :return: True or False и текст ошибки
-    """
-    week_days_mass = []  # массив с днями недели
-    tims_mass = []  # Массив с расписанием по дням недели
-    # проверка 1 кол-во дней недели совпадет с кол-вом времени отправления по дням
-    for week_days, tims in data_dikt.items():
-        week_days_mass.append(week_days)
-        tims_mass.append(tims)
-    if len(tims_mass) != len(week_days_mass):
-        return False, 'Пропущен день недели'
-
-    # Проверка 2 каждому часу соответствует массив с минутами
-    hours_mass = []  # Массив для часов
-    minute_mass = []  # Массив для минут
-    for line in tims_mass:
-        hours_mass.clear()
-        minute_mass.clear()
-        for hour, minute in line.items():
-            hours_mass.append(hour)
-            minute_mass.append(minute)
-        if len(hours_mass) != len(minute_mass):
-            return False, 'Количество часов и массивов минут не совпадают'
-        # Проверка на корректность часов в расписании
-        hours_flag, error_hours_digit_test = hours_digit_test(hours_mass)
-        if hours_flag:
-            return True, ''
-        else:
-            return False, error_hours_digit_test
-    return True, ''
-###################################### Блок вынесен в отдельный файл
-
-
-def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=False, max_workers=20, deep_step_work=3):
+def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=False, max_workers=20):
     """
     Главня функция парсинга
-    :param deep_step_work: позволяет работать функции по частям, на время отладки
     :param max_workers: количество потоков
     :param url: Ссылка (автобус, троллейбус, трамвай)
     :param base_name: Имя файла с базой данных
@@ -293,11 +229,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     flag_launch = False  # Флаг запуска
     objects = launch(base_name=base_name)  # Запуск инициализации
     base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
-    # Фильтрация входного параметра работы главной функции по частям (отладочная часть)
-    if 1 <= deep_step_work <= 3:
-        pass
-    else:
-        deep_step_work = 3
 
     # Дописать проверку наличия файла базы данных или его создание
     # файлы: tram_data.db, trolleybus_data.db, bus_data.db
@@ -393,8 +324,9 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 for rout, data in element.items():
                     for direction, stop_link in data.items():
                         for stop, link in stop_link.items():
-                            query_for_write = "INSERT INTO main_data (rout, direction, stop, time) VALUES (?, ?, ?, ?)"
-                            cursor.execute(query_for_write, (rout, direction, stop, link))
+                            query_for_write = "INSERT INTO main_data (rout, direction, stop, time, link) " \
+                                              "VALUES (?, ?, ?, ?, ?)"
+                            cursor.execute(query_for_write, (rout, direction, stop, link, link))
             base.commit()
         except:
             print('Ошибка сохранения данных об остановках')
@@ -403,11 +335,11 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
 
     time.sleep(0.3)
 
-    if deep_step_work < 3:
-        flag_launch = False
-        arrive_time_mass = []  # Массив для полученных данных
+    num_query = 'SELECT count(*) FROM main_data'
+    cursor.execute(num_query)
+    lines = cursor.fetchone()[0]
 
-    print('Данные по остановкам получены, строк:', len(stops_data))
+    print('Данные по остановкам получены, строк:', lines)
     print('Продолжить (yes/no)')
     user_answer = input()
     if user_answer == 'yes' or 'y':
@@ -426,10 +358,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 for direction, stops in rout.items():
                     for name_station, link_first in stops.items():
                         temp_mass.append(link_first)
-
-        #temp_mass_1 = []
-        #for i in range(2812):
-            #temp_mass_1.append(temp_mass[i])
 
 
         arrive_time_statusbar = tqdm(total=len(temp_mass), colour='yellow',
@@ -463,7 +391,6 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     # Запись результатов в базу и подсчёт недогруженных страниц
     no_load_page_count = 0  # Недогруженные страницы
     if flag_launch:
-        # Запись в базу
         for line in arrive_time_mass:
             link = list(line.items())[0][0]
             arr_time = list(line.items())[0][1]
@@ -483,6 +410,9 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
         print('Все страницы загружены')
 
 
+
+    # Проверка не корректных данных вынесена в отдельный файл
+    """
     # Проверка на "битые данные" по времени отправления
     if correct_data_test:
         query_to_data_from_base = "SELECT * FROM main_data"
@@ -519,6 +449,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
 
     else:
         print('Проверка корректности данных отменена')
+    """
 
     stop_func(base_object=base, cursor_object=cursor)
     print('Завершение работы')
@@ -536,4 +467,4 @@ if __name__ == '__main__':
 
     # Запуск основной функции
     # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30, deep_step_work=3)
+    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30)

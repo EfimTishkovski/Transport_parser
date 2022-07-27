@@ -255,16 +255,15 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 
 
 if __name__ == '__main__':
-    data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
-    print(data)
+    #data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
+    #print(data)
 
-    """
-    rez = correct_time_data({'Понедельник': 'В этот день не ходит',
-                             'Вторник': 'В этот день не ходит',
-                             'Среда': 'В этот день не ходит',
-                             'Четверг': 'В этот день не ходит',
-                             'Пятница': 'В этот день не ходит',
-                             'Суббота': {'06': ('34', '49'), '12': ('22',), '13': ('00', '36'), '16': ('42',), '17': ('19', '56')}})
+    base = sqlite3.connect('trolleybus_data.db')
+    cursor = base.cursor()
 
-    print(rez)
-    """
+    num_query = 'SELECT count(*) FROM main_data'
+    cursor.execute(num_query)
+    lines = cursor.fetchone()[0]
+
+    print('Данные по остановкам получены, строк:', lines)
+

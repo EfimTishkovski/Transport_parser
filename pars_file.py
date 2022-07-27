@@ -336,7 +336,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     lines = cursor.fetchone()[0]
     print('Данные по остановкам получены, строк:', lines)
 
-    flag_launch = False
+    #flag_launch = False
 
     # Получение времени отправления по остановкам
     if flag_launch:
@@ -349,12 +349,16 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                     for name_station, link_first in stops.items():
                         temp_mass.append(link_first)
 
-        arrive_time_statusbar = tqdm(total=len(temp_mass), colour='yellow',
+        temp_mass_1 = []
+        for i in range(1000):
+            temp_mass_1.append(temp_mass[i])
+
+        arrive_time_statusbar = tqdm(total=len(temp_mass_1), colour='yellow',
                                      desc='Расписания по остановкам')  # создание статус бара
         # Многопоточная обработка ссылок, на выходе [{ссылка : время},{ссылка : время},...]
         with ThreadPoolExecutor(max_workers=max_workers) as executor:
-            arrive_time = {executor.submit(get_time_list, URL=link, wait_time=speed, iteration=10):
-                               link for link in temp_mass}
+            arrive_time = {executor.submit(get_time_list, url=link, wait_time=speed, iteration=10):
+                               link for link in temp_mass_1}
             for future in concurrent.futures.as_completed(arrive_time):
                 try:
                     data = future.result()

@@ -10,12 +10,10 @@ from concurrent.futures import ThreadPoolExecutor
 
 
 # Функция запуска соединения с сервером
-def launch(base_name, attempts=3):
+def launch():
     """
-    Функция запуска, проверяет соединение с сайтом и базой.
-    :param attempts : количество попыток проверки
-    :param base_name : имя файла с базой
-    :return: base, cursor : объект базы, объект курсора
+    Функция запуска, проверяет соединение с сайтом.
+    :return: tru or false
     """
     try:
         # Создание объекта вэб драйвера
@@ -23,27 +21,23 @@ def launch(base_name, attempts=3):
         chrome_options.add_argument(argument='--headless')
         driver = webdriver.Chrome(options=chrome_options)
         # Проверка соединения с сайтом
-        for num in range(attempts):
+        for num in range(5):
             try:
                 driver.get('https://minsktrans.by/')
-                break  # Выход из цикла если соединение установлено
+                print('Есть соединение с сайтом')
+                driver.quit()
+                return True # Выход из цикла если соединение установлено
             except Exception as exc:
                 print(exc)
                 time.sleep(2)  # Задержка перед следующей попыткой  ?
         else:
-            print('Ошибка инициализации: нет соединения с сайтом')
+            print('Ошибка : нет соединения с сайтом')
+            driver.quit()
             return False
-        # Создание соединения с БД
-        try:
-            base_object = sqlite3.connect(base_name)  # Создание объекта базы
-            cursor_object = base_object.cursor()  # Создание объекта курсора
-        except:
-            print('Ошибка инициализации: нет соединения с базой')
-            return False
-        # Если все соединения установлены, то возвращаем объекты
-        return base_object, cursor_object
+
     except:
         print('Ошибка инициализации')
+        driver.quit()
         return False
 
 
@@ -125,7 +119,7 @@ def stops_transport_info(data, delay=2, iteration=5):
     driver.quit()
     return station_data
 
-
+# Функция получения расписания по остановкам
 def get_time_list(url, wait_time=3, iteration=5):
     """
     Функция получения времени отправления по остановке
@@ -202,6 +196,7 @@ def complex_mass(mass):
     return out
 ################################### Проверить и тоже вынести в отдельный файл
 
+# Функция закрытия соединений
 def stop_func(base_object, cursor_object):
     """
     Функция завершения работы
@@ -225,15 +220,14 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     :return:
     """
     # Настройки
-    speed = 3  # Задержка для загрузки страницы
+    speed = 3      # Задержка для загрузки страницы
+    iteration = 10 # Количество повторений при недогрузке страницы
 
-    # Запуск
-    flag_launch = False  # Флаг запуска
-    objects = launch(base_name=base_name)  # Запуск инициализации
-    base, cursor = objects  # Получение объектов вэб драйвер, соединение с БД и курсор
+    # Соединение с базой
+    base = sqlite3.connect(base_name)
+    cursor = base.cursor()
 
-    # Дописать проверку наличия файла базы данных или его создание
-    # файлы: tram_data.db, trolleybus_data.db, bus_data.db
+    flag_launch = True  # Флаг запуска
 
     # Информационные сообщения
     if reserve_file_copy:
@@ -242,16 +236,9 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     if correct_data_test:
         print('Проверка корректности данных включена')
 
-    # Проверка инициализации
-    if objects:
-        print('Запуск выполнен успешно')
-        flag_launch = True
-    else:
-        print('Запуск НЕ выполнен')
 
     # Запуск основной программы
     # Получение данных о маршрутах (номер - ссылка)
-    iteration = 5
     if flag_launch:
         for i in range(iteration):
             try:
@@ -404,16 +391,53 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     print('Завершение работы')
 
 
+def data_base_file(base_bus, base_trolleybus, base_tram):
+    base = [base_bus, base_trolleybus, base_tram]
+
+    try:
+        for name_base in base:
+            base = sqlite3.connect(name_base)
+            cursor = base.cursor()
+            # Проверка и создание таблицы routs_link
+            query = 'CREATE TABLE IF NOT EXISTS "routs_link" (' \
+                    'rout TEXT, ' \
+                    'link TEXT);'
+            cursor.execute(query)
+            # Проверка и создание таблицы main_data
+            query = 'CREATE TABLE IF NOT EXISTS "main_data" (' \
+                    'rout TEXT, ' \
+                    'direction TEXT,' \
+                    'stop TEXT,' \
+                    'time TEXT,' \
+                    'link TEXT);'
+            cursor.execute(query)
+            base.commit()
+    except sqlite3.Error as error:
+        print('Ошибка при проверке баз')
+        print(error)
+        return False
+    else:
+        print('Базы в порядке')
+        return True
+
 if __name__ == '__main__':
     # Ссылки на транспорт
     URL_BUS = ''  # Автобусы
     URL_TROLLEYBUS = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus'  # Троллейбусы
     URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
 
-    BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
+    # Файлы с базами
     BASE_BUS = 'bus_data.db'    # База с данными о автобусах
     BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
+    BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
+
+    # Проверка соединения с сайтом
+    net_flag = launch()
+
+    # Проверка баз данных
+    data_base_flag = data_base_file(BASE_BUS, BASE_TROLLEYBUS, BASE_TRAM)
 
     # Запуск основной функции
-    # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-    main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30)
+    if net_flag and data_base_flag:
+        # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
+        main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30)

@@ -255,9 +255,16 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 
 
 if __name__ == '__main__':
-    #data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/68/stops/2329/0')
-    #print(data)
+    # Проверка баз данных
+    # Файлы с базами
+    BASE_BUS = 'bus_data.db'  # База с данными о автобусах
+    BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
+    BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
 
-    data = pars_file.get_time_list('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/1/stops/9565/0', wait_time=2)
-    print(data)
 
+    # Проверка баз данных
+    data_base_flag = pars_file.data_base_file(BASE_BUS, BASE_TROLLEYBUS, BASE_TRAM)
+    print(data_base_flag)
+
+    net_flag = pars_file.launch()
+    print(net_flag)

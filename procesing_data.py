@@ -100,38 +100,51 @@ def correct_time_data(data_dikt):
 def search_problem_data_func(name_base):
     """
     Функция поиска некорректных данных
-    :param name_base:
-    :return: массив с проблемными строками
+    :param name_base: база данных
+    :return: true or false и массив с проблемными строками
     """
-    # Получение данных из базы
-    connection = sqlite3.connect(name_base)
-    cursor = connection.cursor()
-    get_data_query = 'SELECT * FROM main_data'
-    cursor.execute(get_data_query)
-    data_mass = cursor.fetchall()
-
-    # Проверка и поиск некорректных данных
     problem_line_mass = []
     incorrect_data_num = 0
-    for line in data_mass:
-        if line[3][0:5] != 'https':
-            time_dikt = literal_eval(line[3])  # Магия преобразования строки в словарь
-            rezult, out_error = correct_time_data(time_dikt)
-            if rezult:
-                continue
-            else:
-                problem_line_mass.append((line[0], line[1], line[2], out_error))
-                print((line[0], line[1], line[2], out_error))
-                incorrect_data_num += 1
+    try:
+        # Получение данных из базы
+        connection = sqlite3.connect(name_base)
+        cursor = connection.cursor()
+        get_data_query = 'SELECT * FROM main_data'
+        cursor.execute(get_data_query)
+        data_mass = cursor.fetchall()
+        # Проверка и поиск некорректных данных
+        for line in data_mass:
+            if line[3][0:5] != 'https':
+                time_dikt = literal_eval(line[3])  # Магия преобразования строки в словарь
+                rezult, out_error = correct_time_data(time_dikt)
+                if rezult:
+                    continue
+                else:
+                    problem_line_mass.append((line[0], line[1], line[2], out_error))
+                    #print((line[0], line[1], line[2], out_error))
+                    incorrect_data_num += 1
+        #print(incorrect_data_num)
+        cursor.close()
+        connection.close()
+        if incorrect_data_num > 0:
+            return True, problem_line_mass
+        else:
+            return True, problem_line_mass
+    except Exception as error:
+        print(error)
+        return False, problem_line_mass
 
-    print(incorrect_data_num)
-    cursor.close()
-    connection.close()
-    return data_mass
 
 # Функция исправления данных
-def fix_func(data):
-    pass
+def fix_func(data, name_base):
+
+    connection = sqlite3.connect(name_base)
+    cursor = connection.cursor()
+
+    for line in data:
+        if line[3].lower() == 'недопустимый символ' or line[3].lower() == 'не хватает дней' \
+                or line[3].lower() == 'пропущен день недели':
+            pass
     # Ошибки "недопустимый символ" и "Не хватает дней" или "Пропущен день недели" исправлять парсингом заново
     #
 
@@ -142,7 +155,6 @@ def main():
 
 
 if __name__ == '__main__':
-   #mass = search_problem_data_func('trolleybus_data.db')
+   mass = search_problem_data_func('trolleybus_data.db')
 
-   out = hours_digit_test(['05', '16', '08', '10', '23', '00', '01', '02'])
-   print(out)
+

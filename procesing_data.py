@@ -4,6 +4,7 @@ import sqlite3
 from ast import literal_eval
 
 import pars_file
+from add_load_data import half_week_rout
 
 
 def hours_digit_test(mass):
@@ -24,7 +25,7 @@ def hours_digit_test(mass):
         else:
             return False, f'Недопустимый символ: {digit}'
 
-    # Проверка на нахождение числа в рамках 0 - 23
+        # Проверка на нахождение числа в рамках 0 - 23
         if digit != ' ' and len(digit) <= 2 and 0 <= int(digit) <= 23:
             continue
         else:
@@ -95,7 +96,8 @@ def correct_time_data(data_dikt):
         return True, ''
     else:
         return False, error_hours_digit_test
-    #return True, ''
+    # return True, ''
+
 
 def search_problem_data_func(name_base):
     """
@@ -123,7 +125,7 @@ def search_problem_data_func(name_base):
                     problem_line_mass.append((line[0], line[1], line[2], out_error))
                     #print((line[0], line[1], line[2], out_error))
                     incorrect_data_num += 1
-        #print(incorrect_data_num)
+        print(incorrect_data_num)
         cursor.close()
         connection.close()
         if incorrect_data_num > 0:
@@ -142,11 +144,29 @@ def fix_func(data, name_base):
     cursor = connection.cursor()
 
     for line in data:
-        if line[3].lower() == 'недопустимый символ' or line[3].lower() == 'не хватает дней' \
-                or line[3].lower() == 'пропущен день недели':
-            pass
+        error = line[3].split(':')[0]  # Текст ошибки, можно и без этой переменной, но так понятнее
+        if error in 'Недопустимый символ Не хватает дней Пропущен день недели':
+            print(line)
+            # Получение данных ошибочной строки и поиск ссылки
+            rout = line[0]
+            direction = line[1]
+            stop = line[2]
+            search_query = f'SELECT link FROM main_data ' \
+                           f'WHERE rout = "{rout}" and direction = "{direction}" and stop = "{stop}";'
+            cursor.execute(search_query)
+            link = cursor.fetchall()[0][0]
+            # Парсинг новых данных
+            data = half_week_rout(url=link)
+            # Проверка новых данных
+            # Если успешно, запись в базу
+            # Сделать счётчик исправленных строк
+            print(data)
+
+
     # Ошибки "недопустимый символ" и "Не хватает дней" или "Пропущен день недели" исправлять парсингом заново
-    #
+    # Ошибки "Много символов" исправлять обработкой строки, добавить недостающий час или скопировать с другого дня
+    # недели, где этой ошибки нет
+    # Над исправлением ошибки "Часы не в рамках, подумать"
 
 
 # главная функция объединяет работу всех остальных
@@ -155,6 +175,7 @@ def main():
 
 
 if __name__ == '__main__':
-   mass = search_problem_data_func('trolleybus_data.db')
-
-
+    answer, mass = search_problem_data_func('trolleybus_data.db')
+    # массив кортежей ("Название маршрута", "напаравление", "остановка", "ошибка")
+    if answer:
+        fix_func(mass, 'trolleybus_data.db')

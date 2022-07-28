@@ -12,6 +12,7 @@ def hours_digit_test(mass):
     :param mass: Массив с данными для анализа
     :return: True or False и сообщение об ошибке
     """
+
     for digit in mass:
         # проверка на длину строки
         if len(digit) > 2:
@@ -23,18 +24,22 @@ def hours_digit_test(mass):
         else:
             return False, f'Недопустимый символ: {digit}'
 
-        # Проверка на нахождение числа в рамках 0 - 23
+    # Проверка на нахождение числа в рамках 0 - 23
         if digit != ' ' and len(digit) <= 2 and 0 <= int(digit) <= 23:
             continue
         else:
             return False, 'Часы не в рамках 0 < 23'
-    # Проверка на 00 в конце в 24 часовом формате возможно эта проверка лишняя?
-    if int(mass[-1]) == 0:
-        n = 2
-    else:
-        n = 1
-    # Проверка на не убывание часов, что идут по порядку
-    for i in range(len(mass) - n):
+
+    mass_int = list(map(int, mass))
+    # Проверка на не убывание часов, что идут по порядку ?
+    for i in range(len(mass_int) - 1):
+        if mass_int[i] == 23:
+            # Проверка на убывание после 23
+            if mass_int[i] > mass_int[i + 1]:
+                continue
+            else:
+                return False, 'Часы расположены не по порядку'
+
         if mass[i] < mass[i + 1]:
             continue
         else:
@@ -96,7 +101,7 @@ def search_problem_data_func(name_base):
     """
     Функция поиска некорректных данных
     :param name_base:
-    :return:
+    :return: массив с проблемными строками
     """
     # Получение данных из базы
     connection = sqlite3.connect(name_base)
@@ -120,15 +125,24 @@ def search_problem_data_func(name_base):
                 incorrect_data_num += 1
 
     print(incorrect_data_num)
+    cursor.close()
+    connection.close()
     return data_mass
 
 # Функция исправления данных
 def fix_func(data):
     pass
-    # Заполнить таблицу stops link это позволит сэкономить время на догрузке нужных строк
     # Ошибки "недопустимый символ" и "Не хватает дней" или "Пропущен день недели" исправлять парсингом заново
     #
 
 
+# главная функция объединяет работу всех остальных
+def main():
+    pass
+
+
 if __name__ == '__main__':
-   mass = search_problem_data_func('trolleybus_data.db')
+   #mass = search_problem_data_func('trolleybus_data.db')
+
+   out = hours_digit_test(['05', '16', '08', '10', '23', '00', '01', '02'])
+   print(out)

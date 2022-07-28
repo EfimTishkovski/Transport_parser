@@ -390,13 +390,16 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
         base.commit()
         print('OK')
 
+    # Проверка и обработка недогрузки
     if no_load_page_count > 0:
         print('Есть недогруженные страницы, количество:', no_load_page_count)
         main_add_load_func(base_name, max_workers=25, loop=2)  # Функция догрузки недостающих строк
     else:
         print('Все страницы загружены')
 
+    # Проверка и исправление некорректных строк
     # Проверка не корректных данных вынесена в отдельный файл
+    # Вставить сюда функцию дя проверки
 
     stop_func(base_object=base, cursor_object=cursor)
     print('Завершение работы')

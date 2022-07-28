@@ -2,7 +2,7 @@
 
 import concurrent.futures
 import sqlite3
-from pars_file import get_time_list
+#from pars_file import get_time_list
 from concurrent.futures import ThreadPoolExecutor
 from tqdm import tqdm
 

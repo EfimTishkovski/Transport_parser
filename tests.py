@@ -255,16 +255,5 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 
 
 if __name__ == '__main__':
-    # Проверка баз данных
-    # Файлы с базами
-    BASE_BUS = 'bus_data.db'  # База с данными о автобусах
-    BASE_TROLLEYBUS = 'trolleybus_data.db'  # База с данными о троллейбусах
-    BASE_TRAM = 'tram_data.db'  # База с данными о трамваях
-
-
-    # Проверка баз данных
-    data_base_flag = pars_file.data_base_file(BASE_BUS, BASE_TROLLEYBUS, BASE_TRAM)
-    print(data_base_flag)
-
-    net_flag = pars_file.launch()
-    print(net_flag)
+    mass = [el for el in range(24)]
+    print(mass)

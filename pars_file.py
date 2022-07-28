@@ -7,6 +7,7 @@ import json
 from tqdm import tqdm
 from ast import literal_eval
 from concurrent.futures import ThreadPoolExecutor
+from add_load_data import main_add_load_func
 
 
 # Функция запуска соединения с сервером
@@ -392,6 +393,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     if no_load_page_count > 0:
         print('Есть недогруженные страницы, количество:', no_load_page_count)
         # кусок кода для догрузки недостающих данных
+        main_add_load_func(base_name, max_workers=25, loop=2)
     else:
         print('Все страницы загружены')
 
@@ -459,4 +461,4 @@ if __name__ == '__main__':
     # Запуск основной функции
     if net_flag and data_base_flag:
         # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-        main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=30)
+        main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=25)

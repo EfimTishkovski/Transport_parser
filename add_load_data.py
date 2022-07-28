@@ -13,7 +13,6 @@ import time
 
 
 def half_week_rout(url, wait_time=3, iteration=8):
-
     """
     Функция получения времени отправления по маршрутам, которые ходят не каждый день.
     :param url: Ссыдка на страницу с маршрутом
@@ -41,13 +40,14 @@ def half_week_rout(url, wait_time=3, iteration=8):
             for day in range(1, 8):
                 # Проверка кнопки на активность
                 button_info = driver.find_element(By.XPATH,
-                f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]').get_attribute('class')
+                                                  f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]').get_attribute(
+                    'class')
                 if 'disabled' in button_info:
                     out_data_mass[week_days[day]] = 'В этот день не ходит'
                 else:
                     button = driver.find_element(By.XPATH,
-                                f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
-                    button.click()     # Щёлкает по кнопкам дней недели
+                                                 f'/html/body/div[2]/div/div[2]/div[4]/div/div[3]/div[2]/div[1]/button[{day}]')
+                    button.click()  # Щёлкает по кнопкам дней недели
                     time.sleep(0.3)
                     data_from_timelist = driver.find_element(By.ID, 'schedule')
                     data_mass = data_from_timelist.text.split('\n')
@@ -59,20 +59,22 @@ def half_week_rout(url, wait_time=3, iteration=8):
 
             else:
                 driver.quit()
-                return {url : out_data_mass}  # Успешная отработка цикла
+                return {url: out_data_mass}  # Успешная отработка цикла
 
         except Exception:
             continue
     else:
         driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
-        return {url : ''}
+        return {url: ''}
 
-def main_add_load_func(name_database, max_workers=20):
+
+def main_add_load_func(name_database, max_workers=20, loop=10):
     """
-    Функция догрузки строк по которым данные не бвли получены.
-    Сама связывается с базой, чситает количество и догружает.
+    Функция догрузки строк по которым данные не были получены.
+    Сама связывается с базой, считает количество и догружает.
     Работает в цикле пока недогруженных строк не останется.
     Основная функция парсинга half_week_rout позволяет получать данные о маршрутах которые ходят не каждый день
+    :param loop: Число циклов для завершения работы функции, по умолчанию 10
     :param name_database: База данных
     :param max_workers: Количество потоков при загрузке
     :return: True если работа завершена успешно False при ошибке во время работы
@@ -93,7 +95,7 @@ def main_add_load_func(name_database, max_workers=20):
     endless_loop_count = 0
     while len(link_data) != 0:
         # Досрочное завершение цикла, только на момент отладки
-        if endless_loop_count == 2:
+        if endless_loop_count == loop:
             print(f'Цикл завершён на {endless_loop_count} итерации')
             cursor.close()
             connection.close()
@@ -104,16 +106,15 @@ def main_add_load_func(name_database, max_workers=20):
             s_bar = tqdm(total=len(link_data), colour='BLUE', desc='Повторная загрузка страниц')
             with ThreadPoolExecutor(max_workers=max_workers) as executor:
                 new_data_mass = {executor.submit(half_week_rout, url=link, wait_time=3, iteration=10):
-                                 link for link in link_data}
+                                     link for link in link_data}
                 for future in concurrent.futures.as_completed(new_data_mass):
                     try:
                         data = future.result()
                     except:
-                        out_mass.append({'' : ''})
+                        out_mass.append({'': ''})
                         s_bar.update()
                     else:
                         out_mass.append(data)
-                        print(data)
                         s_bar.update()
             s_bar.close()
         except:
@@ -127,7 +128,6 @@ def main_add_load_func(name_database, max_workers=20):
             for line in out_mass:
                 link = list(line.items())[0][0]
                 arr_time = list(line.items())[0][1]
-                print(link, arr_time)
                 if arr_time != '':
                     query = "UPDATE main_data SET time = ? WHERE time = ?"
                     parameters = (str(arr_time), str(link))
@@ -135,12 +135,14 @@ def main_add_load_func(name_database, max_workers=20):
             connection.commit()
             print('OK')
             endless_loop_count += 1
+            out_mass.clear()
         except:
             print('Ошибка записи новых данных в базу')
             cursor.close()
             connection.close()
             link_data.clear()
             new_data_mass.clear()
+            out_mass.clear()
             return False
 
         link_data.clear()
@@ -166,4 +168,4 @@ def main_add_load_func(name_database, max_workers=20):
 
 
 if __name__ == '__main__':
-    main_add_load_func('trolleybus_data.db', max_workers=30)
+    main_add_load_func('trolleybus_data.db', max_workers=25, loop=2)

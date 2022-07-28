@@ -392,8 +392,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
 
     if no_load_page_count > 0:
         print('Есть недогруженные страницы, количество:', no_load_page_count)
-        # кусок кода для догрузки недостающих данных
-        main_add_load_func(base_name, max_workers=25, loop=2)
+        main_add_load_func(base_name, max_workers=25, loop=2)  # Функция догрузки недостающих строк
     else:
         print('Все страницы загружены')
 

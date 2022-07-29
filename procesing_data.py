@@ -259,20 +259,20 @@ def complex_mass(mass):
     # Над исправлением ошибки "Часы не в рамках, подумать"
 
 
-def re_pars(data_mass):
+def re_pars(data_array):
     """
     Функция первичного репарсинга
-    :param data_mass: Массив со ссылками для репарсинга
-    :return: trye or false и массив данных
+    :param data_array: Массив со ссылками для репарсинга
+    :return: true or false и массив данных
     """
 
     out = []  # Массив выходных данных
 
     # Репарсинг
-    s_bar_get_new_data = tqdm(total=len(data_mass), desc='Повторное получение данных', colour='GREEN')
+    s_bar_get_new_data = tqdm(total=len(data_array), desc='Повторное получение данных', colour='GREEN')
     with ThreadPoolExecutor(max_workers=10) as execuor:
         stops_info = {execuor.submit(half_week_rout, url=url[3], wait_time=3, iteration=5):
-                          url for url in data_mass}
+                          url for url in data_array}
         for future in concurrent.futures.as_completed(stops_info):
             try:
                 data = future.result()

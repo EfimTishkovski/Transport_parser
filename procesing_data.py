@@ -139,28 +139,44 @@ def search_problem_data_func(name_base):
 
 # Функция исправления данных
 def fix_func(data, name_base):
+    """
+    Функция исправления некорректных данных
+    :param data: Массив с входными данными
+    :param name_base: База данных
+    :return: Массив с обработанными данными
+    """
 
-    connection = sqlite3.connect(name_base)
-    cursor = connection.cursor()
+    out = []
+    try:
+        connection = sqlite3.connect(name_base)
+        cursor = connection.cursor()
+    except sqlite3.Error as base_connection_error:
+        print(base_connection_error)
+        return False, out
+    try:
+        for line in data:
+            error = line[3].split(':')[0]  # Текст ошибки, можно и без этой переменной, но так понятнее
+            if error in 'Недопустимый символ Не хватает дней Пропущен день недели':
+                print(line)
+                # Получение данных ошибочной строки и поиск ссылки
+                rout = line[0]
+                direction = line[1]
+                stop = line[2]
+                values = (rout,direction, stop)
+                search_query = f'SELECT link FROM main_data ' \
+                               f'WHERE rout = ? and direction = ? and stop = ?;'
+                cursor.execute(search_query, values)
+                link = cursor.fetchall()[0][0]
+                # Парсинг новых данных
+                data = half_week_rout(url=link)
+                out.append((rout, direction, stop, data))
+                print(data)
+    except Exception as processing_error:
+        print(processing_error)
+        return False, out
 
-    for line in data:
-        error = line[3].split(':')[0]  # Текст ошибки, можно и без этой переменной, но так понятнее
-        if error in 'Недопустимый символ Не хватает дней Пропущен день недели':
-            print(line)
-            # Получение данных ошибочной строки и поиск ссылки
-            rout = line[0]
-            direction = line[1]
-            stop = line[2]
-            search_query = f'SELECT link FROM main_data ' \
-                           f'WHERE rout = "{rout}" and direction = "{direction}" and stop = "{stop}";'
-            cursor.execute(search_query)
-            link = cursor.fetchall()[0][0]
-            # Парсинг новых данных
-            data = half_week_rout(url=link)
-            # Проверка новых данных
-            # Если успешно, запись в базу
-            # Сделать счётчик исправленных строк
-            print(data)
+    else:
+        return True, out
 
 
     # Ошибки "недопустимый символ" и "Не хватает дней" или "Пропущен день недели" исправлять парсингом заново
@@ -170,12 +186,15 @@ def fix_func(data, name_base):
 
 
 # главная функция объединяет работу всех остальных
-def main():
+def main_processing():
     pass
 
 
 if __name__ == '__main__':
-    answer, mass = search_problem_data_func('trolleybus_data.db')
+    answer_search, mass = search_problem_data_func('trolleybus_data.db')
     # массив кортежей ("Название маршрута", "напаравление", "остановка", "ошибка")
-    if answer:
+    if answer_search:
         fix_func(mass, 'trolleybus_data.db')
+    # исправление
+    # Проверка исправленного
+    # Запись в базу

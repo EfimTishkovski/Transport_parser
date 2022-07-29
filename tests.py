@@ -255,5 +255,18 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 
 
 if __name__ == '__main__':
-    mass = [el for el in range(24)]
-    print(mass)
+
+    connection = sqlite3.connect('trolleybus_data.db')
+    cursor = connection.cursor()
+
+    rout = "4 ДС ''Одоевского'' - Бобруйская"
+    direction = 'Прямое направление'
+    stop = "ДС ''Одоевского''"
+    values = rout, direction, stop
+    search_query = f'SELECT link FROM main_data ' \
+                   f'WHERE rout = ? and direction = ? and stop = ?;'
+
+    cursor.execute(search_query, values)
+    out = cursor.fetchall()
+    print(out)
+

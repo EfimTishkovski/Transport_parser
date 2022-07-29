@@ -322,7 +322,7 @@ if __name__ == '__main__':
             answer, error_mess = correct_time_data(times)
             if answer:
                 true_data.append(line)
-        print('исправленных строк:', len(true_data))
+        print('Исправленных строк:', len(true_data))
 
 
     # Запись оного в базу, сравнение кол-ва косячных строк

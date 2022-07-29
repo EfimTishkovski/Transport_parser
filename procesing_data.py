@@ -270,7 +270,7 @@ def re_pars(data_mass):
 
     # Репарсинг
     s_bar_get_new_data = tqdm(total=len(data_mass), desc='Повторное получение данных', colour='GREEN')
-    with ThreadPoolExecutor(max_workers=20) as execuor:
+    with ThreadPoolExecutor(max_workers=10) as execuor:
         stops_info = {execuor.submit(half_week_rout, url=url[3], wait_time=3, iteration=5):
                           url for url in data_mass}
         for future in concurrent.futures.as_completed(stops_info):
@@ -310,8 +310,8 @@ if __name__ == '__main__':
     # Первичный репарсинг
     if answer_search:
         temp = []
-        for i in range(10):
-            a = 10 + i
+        for i in range(30):
+            a = 30 + i
             temp.append(mass[a])
 
 

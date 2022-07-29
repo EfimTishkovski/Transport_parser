@@ -308,33 +308,34 @@ if __name__ == '__main__':
     print(f'Найдено {len(mass)} некорректных строк')
 
     # Первичный репарсинг
+    repars_answer = False
+    repars_mass = []
     if answer_search:
+        """
         temp = []
-        for i in range(30):
-            a = 30 + i
+        for i in range(100):
+            a = 100 + i
             temp.append(mass[a])
+        """
+        repars_answer, repars_mass = re_pars(mass)
 
-
-        repars_answer, repars_mass = re_pars(temp)
-
-        for element in repars_mass:
-            print(element)
 
     # Проверка данных после репарсинга
     true_data = []
+    answer = False
     if repars_answer:
         for line in repars_mass:
             try:
                 times = list(line.values())[0]
                 answer, error_mess = correct_time_data(times)
             except:
-                print(times)
+                print(line, 'Ошибка')
+                continue
             if answer:
                 true_data.append(line)
         print('Исправленных строк:', len(true_data))
 
-
-    # Запись оного в базу, сравнение кол-ва косячных строк
+    # Запись оного массива true_data в базу, сравнение кол-ва косячных строк
     # Очистка массивов и освобождение памяти
     # Завершение первого этапа
 

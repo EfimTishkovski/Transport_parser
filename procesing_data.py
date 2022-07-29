@@ -2,8 +2,8 @@
 
 import sqlite3
 from ast import literal_eval
+from tqdm import tqdm
 
-import pars_file
 from add_load_data import half_week_rout
 
 
@@ -123,7 +123,6 @@ def search_problem_data_func(name_base):
                     continue
                 else:
                     problem_line_mass.append((line[0], line[1], line[2], out_error))
-                    #print((line[0], line[1], line[2], out_error))
                     incorrect_data_num += 1
         print(incorrect_data_num)
         cursor.close()
@@ -153,11 +152,11 @@ def fix_func(data, name_base):
     except sqlite3.Error as base_connection_error:
         print(base_connection_error)
         return False, out
+    s_bar = tqdm(total=len(data), desc='Исправление', colour='GREEN')
     try:
         for line in data:
             error = line[3].split(':')[0]  # Текст ошибки, можно и без этой переменной, но так понятнее
             if error in 'Недопустимый символ Не хватает дней Пропущен день недели':
-                print(line)
                 # Получение данных ошибочной строки и поиск ссылки
                 rout = line[0]
                 direction = line[1]
@@ -170,22 +169,22 @@ def fix_func(data, name_base):
                 # Парсинг новых данных
                 data = half_week_rout(url=link)
                 out.append((rout, direction, stop, data))
-                print(data)
+                s_bar.update()
     except Exception as processing_error:
         print(processing_error)
+        s_bar.close()
         return False, out
 
     else:
+        s_bar.close()
         return True, out
 
-
-    # Ошибки "недопустимый символ" и "Не хватает дней" или "Пропущен день недели" исправлять парсингом заново
     # Ошибки "Много символов" исправлять обработкой строки, добавить недостающий час или скопировать с другого дня
     # недели, где этой ошибки нет
     # Над исправлением ошибки "Часы не в рамках, подумать"
 
 
-# главная функция объединяет работу всех остальных
+# Главная функция объединяет работу всех остальных
 def main_processing():
     pass
 
@@ -193,8 +192,10 @@ def main_processing():
 if __name__ == '__main__':
     answer_search, mass = search_problem_data_func('trolleybus_data.db')
     # массив кортежей ("Название маршрута", "напаравление", "остановка", "ошибка")
+    fix_mass = []
     if answer_search:
-        fix_func(mass, 'trolleybus_data.db')
-    # исправление
+        answer_fix, fix_mass = fix_func(mass, 'trolleybus_data.db')
+    print(f'Исправлено {len(fix_mass)} записей.')
+    print(*fix_mass)
     # Проверка исправленного
     # Запись в базу

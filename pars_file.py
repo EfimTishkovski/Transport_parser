@@ -75,8 +75,7 @@ def routs(url, delay=2):
 def stops_transport_info(data, delay=2, iteration=5):
     """
     Функция получения ссылок названий остановок
-    :param web_browser: Объект вэб драйвера
-    :param URL: Ссылка на маршрут
+    :param data: массив с входными данными [маршрут, ссылка]
     :param delay: Задержка после загрузки страницы
     :param iteration: Количество повторений при недогрузке страницы
     :return: словарь с выходными данными
@@ -125,7 +124,8 @@ def stops_transport_info(data, delay=2, iteration=5):
 def get_time_list(url, wait_time=3, iteration=5):
     """
     Функция получения времени отправления по остановке
-    :param URL: ссылка на страницу
+    :param url: ссылка на страницу
+    :param wait_time: задержка для догрузки страницы
     :param iteration: Количество попыток загрузки страницы
     :return: словарь с днями недели и временем отправления или '' если не удалось получить данные
     """

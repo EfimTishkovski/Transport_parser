@@ -1,10 +1,12 @@
 # Обработка данных, исправление некорректных данных
 # Некорректные данные встречаются в строках расписания по остановкам
 # Не хватает часов, недопустимые символы и прочее, всё это исправляется здесь и записывается обратно в базу
-
+import concurrent.futures
 import sqlite3
+import time
 from ast import literal_eval
 from tqdm import tqdm
+from concurrent.futures import ThreadPoolExecutor
 
 from add_load_data import half_week_rout
 
@@ -117,9 +119,7 @@ def search_problem_data_func(data_massive):
                 if rezult:
                     continue
                 else:
-                    problem_line_mass.append((line[0], line[1], line[2], out_error))
-                    incorrect_data_num += 1
-        print(incorrect_data_num)
+                    problem_line_mass.append((line[0], line[1], line[2], line[4], out_error))
         if incorrect_data_num > 0:
             return True, problem_line_mass
         else:
@@ -139,6 +139,9 @@ def fix_func(data, name_base):
     """
 
     out = []
+    array_of_grop_1 = []
+    array_of_grop_2 = []
+    array_of_grop_3 = []
 
     try:
         connection = sqlite3.connect(name_base)
@@ -147,34 +150,71 @@ def fix_func(data, name_base):
         print(base_connection_error)
         return False, out
 
-    s_bar = tqdm(total=len(data), desc='Исправление', colour='GREEN')
+    s_bar = tqdm(total=len(data), desc='Сортировка', colour='GREEN')
     try:
         for line in data:
+            # Сортировка
             error = line[3].split(':')[0]  # Текст ошибки, можно и без этой переменной, но так понятнее
+            # Group 1
             if error in 'Недопустимый символ Не хватает дней Пропущен день недели':
                 # Получение данных ошибочной строки и поиск ссылки
                 rout = line[0]
                 direction = line[1]
                 stop = line[2]
-                values = (rout,direction, stop)
+                values = (rout, direction, stop)
                 search_query = f'SELECT link FROM main_data ' \
                                f'WHERE rout = ? and direction = ? and stop = ?;'
                 cursor.execute(search_query, values)
                 link = cursor.fetchall()[0][0]
+                array_of_grop_1.append(link)
                 # Парсинг новых данных
-                data = half_week_rout(url=link)
-                out.append((rout, direction, stop, data))
+                # data = half_week_rout(url=link, iteration=5)
+                # out.append((rout, direction, stop, data))
                 s_bar.update()
 
-            if error in 'Слишком много символов Часы не в рамках 0 < 23':
-                pass
-                # Парсить заново функцией half_week_rout
-                # Проверить на правильность, если опять, то применить функцию complex_mass
+            # Group 2
+            elif error in 'Слишком много символов':
+                s_bar.update()
 
+            # Group 3
+            elif error in 'Часы не в рамках 0 < 23':
+                rout = line[0]
+                direction = line[1]
+                stop = line[2]
+                values = (rout, direction, stop)
+                search_query = f'SELECT link FROM main_data ' \
+                               f'WHERE rout = ? and direction = ? and stop = ?;'
+                cursor.execute(search_query, values)
+                link = cursor.fetchall()[0][0]
+                array_of_grop_3.append(link)
+                s_bar.update()
+            else:
+                s_bar.update()
+        print('Сортировка завершена')
+        s_bar.close()
+        time.sleep(0.2)
 
-            if error in 'Часы не в рамках 0 < 23':
-                print(line)
-                pass
+        # Исправление
+        array_of_grop_1.extend(array_of_grop_3)
+        s_bar_get_new_data = tqdm(total=len(array_of_grop_1), desc='Повторное получение данных', colour='GREEN')
+        with ThreadPoolExecutor(max_workers=20) as execuor:
+            stops_info = {execuor.submit(half_week_rout, url=url, wait_time=3, iteration=5):
+                              url for url in array_of_grop_1}
+            for future in concurrent.futures.as_completed(stops_info):
+                try:
+                    data = future.result()
+                except:
+                    out.append({'': ''})
+                    s_bar_get_new_data.update()
+                else:
+                    out.append(data)
+                    s_bar_get_new_data.update()
+            s_bar_get_new_data.close()
+
+            # дописать внесение изменений в базу
+
+            print('Исправление завершено')
+
     except Exception as processing_error:
         print(processing_error)
         s_bar.close()
@@ -183,10 +223,10 @@ def fix_func(data, name_base):
         return False, out
 
     else:
-        s_bar.close()
         cursor.close()
         connection.close()
         return True, out
+
 
 def complex_mass(mass):
     """
@@ -219,6 +259,34 @@ def complex_mass(mass):
     # Над исправлением ошибки "Часы не в рамках, подумать"
 
 
+def re_pars(data_mass):
+    """
+    Функция первичного репарсинга
+    :param data_mass: Массив со ссылками для репарсинга
+    :return: trye or false и массив данных
+    """
+
+    out = []  # Массив выходных данных
+
+    # Репарсинг
+    s_bar_get_new_data = tqdm(total=len(data_mass), desc='Повторное получение данных', colour='GREEN')
+    with ThreadPoolExecutor(max_workers=20) as execuor:
+        stops_info = {execuor.submit(half_week_rout, url=url[3], wait_time=3, iteration=5):
+                          url for url in data_mass}
+        for future in concurrent.futures.as_completed(stops_info):
+            try:
+                data = future.result()
+            except:
+                out.append({'': ''})
+                s_bar_get_new_data.update()
+            else:
+                out.append(data)
+                s_bar_get_new_data.update()
+        s_bar_get_new_data.close()
+
+    return True, out
+
+
 # Главная функция объединяет работу всех остальных
 def main_processing():
     pass
@@ -237,19 +305,29 @@ if __name__ == '__main__':
     # Поиск
     answer_search, mass = search_problem_data_func(data_mass)
     # массив кортежей ("Название маршрута", "направление", "остановка", "ошибка")
+    print(f'Найдено {len(mass)} некорректных строк')
 
-    # Исправление
-    fix_mass = []
+    # Первичный репарсинг
     if answer_search:
-        answer_fix, fix_mass = fix_func(mass, name_base)
-    else:
-        answer_fix = False
+        repars_answer, repars_mass = re_pars(mass)
 
-    # Проверка
-    if answer_fix:
-        print(f'Исправлено {len(fix_mass)} записей.')
-        print(*fix_mass)
-    # Проверка исправленного
-    # Запись в базу
+        for element in repars_mass:
+            print(element)
+
+    # Проверка данных после репарсинга
+    true_data = []
+    if repars_answer:
+        for line in repars_mass:
+            times = list(line.values())[0]
+            answer, error_mess = correct_time_data(times)
+            if answer:
+                true_data.append(line)
+        print('исправленных строк:', len(true_data))
+
+
+    # Запись оного в базу, сравнение кол-ва косячных строк
+    # Очистка массивов и освобождение памяти
+    # Завершение первого этапа
+
     cursor.close()
     connection.close()

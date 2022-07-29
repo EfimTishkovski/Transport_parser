@@ -309,7 +309,13 @@ if __name__ == '__main__':
 
     # Первичный репарсинг
     if answer_search:
-        repars_answer, repars_mass = re_pars(mass)
+        temp = []
+        for i in range(10):
+            a = 10 + i
+            temp.append(mass[a])
+
+
+        repars_answer, repars_mass = re_pars(temp)
 
         for element in repars_mass:
             print(element)
@@ -318,8 +324,11 @@ if __name__ == '__main__':
     true_data = []
     if repars_answer:
         for line in repars_mass:
-            times = list(line.values())[0]
-            answer, error_mess = correct_time_data(times)
+            try:
+                times = list(line.values())[0]
+                answer, error_mess = correct_time_data(times)
+            except:
+                print(times)
             if answer:
                 true_data.append(line)
         print('Исправленных строк:', len(true_data))

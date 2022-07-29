@@ -1,4 +1,6 @@
 # Обработка данных, исправление некорректных данных
+# Некорректные данные встречаются в строках расписания по остановкам
+# Не хватает часов, недопустимые символы и прочее, всё это исправляется здесь и записывается обратно в базу
 
 import sqlite3
 from ast import literal_eval
@@ -96,26 +98,19 @@ def correct_time_data(data_dikt):
         return True, ''
     else:
         return False, error_hours_digit_test
-    # return True, ''
 
 
-def search_problem_data_func(name_base):
+def search_problem_data_func(data_massive):
     """
     Функция поиска некорректных данных
-    :param name_base: база данных
+    :param data_massive: массив данных
     :return: true or false и массив с проблемными строками
     """
     problem_line_mass = []
     incorrect_data_num = 0
     try:
-        # Получение данных из базы
-        connection = sqlite3.connect(name_base)
-        cursor = connection.cursor()
-        get_data_query = 'SELECT * FROM main_data'
-        cursor.execute(get_data_query)
-        data_mass = cursor.fetchall()
         # Проверка и поиск некорректных данных
-        for line in data_mass:
+        for line in data_massive:
             if line[3][0:5] != 'https':
                 time_dikt = literal_eval(line[3])  # Магия преобразования строки в словарь
                 rezult, out_error = correct_time_data(time_dikt)
@@ -125,8 +120,6 @@ def search_problem_data_func(name_base):
                     problem_line_mass.append((line[0], line[1], line[2], out_error))
                     incorrect_data_num += 1
         print(incorrect_data_num)
-        cursor.close()
-        connection.close()
         if incorrect_data_num > 0:
             return True, problem_line_mass
         else:
@@ -146,12 +139,14 @@ def fix_func(data, name_base):
     """
 
     out = []
+
     try:
         connection = sqlite3.connect(name_base)
         cursor = connection.cursor()
     except sqlite3.Error as base_connection_error:
         print(base_connection_error)
         return False, out
+
     s_bar = tqdm(total=len(data), desc='Исправление', colour='GREEN')
     try:
         for line in data:
@@ -170,14 +165,54 @@ def fix_func(data, name_base):
                 data = half_week_rout(url=link)
                 out.append((rout, direction, stop, data))
                 s_bar.update()
+
+            if error in 'Слишком много символов Часы не в рамках 0 < 23':
+                pass
+                # Парсить заново функцией half_week_rout
+                # Проверить на правильность, если опять, то применить функцию complex_mass
+
+
+            if error in 'Часы не в рамках 0 < 23':
+                print(line)
+                pass
     except Exception as processing_error:
         print(processing_error)
         s_bar.close()
+        cursor.close()
+        connection.close()
         return False, out
 
     else:
         s_bar.close()
+        cursor.close()
+        connection.close()
         return True, out
+
+def complex_mass(mass):
+    """
+    Функция обработки нестандартного массива данных
+    типа: ['12', '34', '56']
+    :param mass: нестандартный массив на входе
+    :return: обработанный массив на выходе
+    """
+    out = {}
+    hour = mass[0]
+    temp = []
+    for i in range(1, len(mass) - 1):
+        if int(mass[i]) == int(hour):
+            continue
+        elif int(mass[i]) < int(mass[i + 1]):
+            temp.append(mass[i])
+        else:
+            temp.append(mass[i])
+            out[hour] = tuple(temp.copy())
+            hour = mass[i + 1]
+            temp.clear()
+    else:
+        temp.append(mass[i + 1])
+        out[hour] = tuple(temp.copy())
+        temp.clear()
+    return out
 
     # Ошибки "Много символов" исправлять обработкой строки, добавить недостающий час или скопировать с другого дня
     # недели, где этой ошибки нет
@@ -190,12 +225,31 @@ def main_processing():
 
 
 if __name__ == '__main__':
-    answer_search, mass = search_problem_data_func('trolleybus_data.db')
-    # массив кортежей ("Название маршрута", "напаравление", "остановка", "ошибка")
+
+    # Запрос в базу
+    name_base = 'trolleybus_data.db'
+    connection = sqlite3.connect(name_base)
+    cursor = connection.cursor()
+    get_data_query = 'SELECT * FROM main_data'
+    cursor.execute(get_data_query)
+    data_mass = cursor.fetchall()
+
+    # Поиск
+    answer_search, mass = search_problem_data_func(data_mass)
+    # массив кортежей ("Название маршрута", "направление", "остановка", "ошибка")
+
+    # Исправление
     fix_mass = []
     if answer_search:
-        answer_fix, fix_mass = fix_func(mass, 'trolleybus_data.db')
-    print(f'Исправлено {len(fix_mass)} записей.')
-    print(*fix_mass)
+        answer_fix, fix_mass = fix_func(mass, name_base)
+    else:
+        answer_fix = False
+
+    # Проверка
+    if answer_fix:
+        print(f'Исправлено {len(fix_mass)} записей.')
+        print(*fix_mass)
     # Проверка исправленного
     # Запись в базу
+    cursor.close()
+    connection.close()

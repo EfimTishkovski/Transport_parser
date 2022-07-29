@@ -247,7 +247,7 @@ def half_week_rout(URL, wait_time=3, iteration=8):
                 return out_data_mass  # Успешная отработка цикла
 
         except Exception as error_mess:
-            #print(error_mess)
+            print(error_mess)
             continue
     else:
         driver.quit()  # Закрытие драйвера если цикл отработал безуспешно
@@ -256,17 +256,13 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 
 if __name__ == '__main__':
 
-    connection = sqlite3.connect('trolleybus_data.db')
-    cursor = connection.cursor()
+    arr = {'Понедельник': {'06': ('26',), '08': ('09',), '24': ('31',)},
+           'Вторник': {'06': ('26',), '08': ('09',), '24': ('31',)},
+           'Среда': {'06': ('26',), '08': ('09',), '24': ('31',)},
+           'Четверг': {'06': ('26',), '08': ('09',), '24': ('31',)},
+           'Пятница': {'06': ('26',), '08': ('09',), '24': ('31',)},
+           'Суббота': {'06': ('26',), '08': ('09',), '24': ('31',)},
+           'Воскресенье': {'06': ('26',), '08': ('09',), '24': ('31',)}}
 
-    rout = "4 ДС ''Одоевского'' - Бобруйская"
-    direction = 'Прямое направление'
-    stop = "ДС ''Одоевского''"
-    values = rout, direction, stop
-    search_query = f'SELECT link FROM main_data ' \
-                   f'WHERE rout = ? and direction = ? and stop = ?;'
-
-    cursor.execute(search_query, values)
-    out = cursor.fetchall()
-    print(out)
-
+    new_data = half_week_rout('https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/40%D0%B0/stops/52379/0')
+    print(new_data)

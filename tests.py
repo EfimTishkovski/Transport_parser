@@ -255,5 +255,9 @@ def half_week_rout(URL, wait_time=3, iteration=8):
 
 
 if __name__ == '__main__':
-    arr = [1, 2, 3, 4, 5]
+    arr = [{'ссылка' : 'время', 'ссылка новая' : '13-40'}]
+
+    for line in arr:
+        link, times = line.items()
+        print(link, times)
 

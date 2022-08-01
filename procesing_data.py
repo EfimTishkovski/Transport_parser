@@ -337,9 +337,39 @@ if __name__ == '__main__':
                 true_data.append(line)
         print('Исправленных строк:', len(true_data))
 
+    # Формат промежуточного массива: [{ссылка : время, ссылка : время}]
     # Запись оного массива true_data в базу, сравнение кол-ва косячных строк
+    for line in repars_mass:
+        write_query = 'UPDATE main_data' \
+                    'SET time = ?' \
+                    'WHERE link = ?'
+        link, arr_times = line.items()
+        cursor.execute(write_query, (link, arr_times))
+    connection.commit()
+    print('Изменения записаны')
+
     # Очистка массивов и освобождение памяти
+    data_mass.clear()
+    repars_mass.clear()
+    true_data.clear()
+
     # Завершение первого этапа
+
+    # Проверка на наличие битых строк
+    #get_data_query = 'SELECT * FROM main_data'
+    cursor.execute(get_data_query)
+    data_mass = cursor.fetchall()
+
+    time.sleep(0.5)
+    print('Повторный поиск')
+
+    # Повторный поиск
+    answer_search, mass = search_problem_data_func(data_mass)
+    # массив кортежей ("Название маршрута", "направление", "остановка", "ошибка")
+    print(f'Найдено {len(mass)} некорректных строк')
+
+    for line in mass:
+        print(line)
 
     cursor.close()
     connection.close()

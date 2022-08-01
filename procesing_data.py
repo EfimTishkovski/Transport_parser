@@ -319,6 +319,8 @@ if __name__ == '__main__':
         """
         repars_answer, repars_mass = re_pars(mass)
 
+    print('Репарсинг завершён, проверка новых данных')
+    time.sleep(0.5)
 
     # Проверка данных после репарсинга
     true_data = []

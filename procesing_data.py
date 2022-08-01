@@ -343,9 +343,9 @@ if __name__ == '__main__':
         write_query = 'UPDATE main_data' \
                     'SET time = ?' \
                     'WHERE link = ?'
-        link = line.keys()
-        arr_times = line.values()
-        cursor.execute(write_query, (arr_times[0], link[0]))
+        link = list(line.keys())[0]
+        arr_times = list(line.values())[0]
+        cursor.execute(write_query, (arr_times, link))
     connection.commit()
     print('Изменения записаны')
 

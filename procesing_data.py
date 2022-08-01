@@ -259,7 +259,7 @@ def complex_mass(mass):
     # Над исправлением ошибки "Часы не в рамках, подумать"
 
 
-def re_pars(data_array):
+def re_pars(data_array, threead=10):
     """
     Функция первичного репарсинга
     :param data_array: Массив со ссылками для репарсинга
@@ -270,7 +270,7 @@ def re_pars(data_array):
 
     # Репарсинг
     s_bar_get_new_data = tqdm(total=len(data_array), desc='Повторное получение данных', colour='GREEN')
-    with ThreadPoolExecutor(max_workers=10) as execuor:
+    with ThreadPoolExecutor(max_workers=threead) as execuor:
         stops_info = {execuor.submit(half_week_rout, url=url[3], wait_time=3, iteration=5):
                           url for url in data_array}
         for future in concurrent.futures.as_completed(stops_info):
@@ -317,7 +317,7 @@ if __name__ == '__main__':
             a = 100 + i
             temp.append(mass[a])
         """
-        repars_answer, repars_mass = re_pars(mass)
+        repars_answer, repars_mass = re_pars(mass, threead=15)
 
     print('Репарсинг завершён, проверка новых данных')
     time.sleep(0.5)
@@ -343,8 +343,9 @@ if __name__ == '__main__':
         write_query = 'UPDATE main_data' \
                     'SET time = ?' \
                     'WHERE link = ?'
-        link, arr_times = line.items()
-        cursor.execute(write_query, (link, arr_times))
+        link = line.keys()
+        arr_times = line.values()
+        cursor.execute(write_query, (arr_times[0], link[0]))
     connection.commit()
     print('Изменения записаны')
 

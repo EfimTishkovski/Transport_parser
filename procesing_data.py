@@ -342,7 +342,7 @@ if __name__ == '__main__':
     for line in repars_mass:
         write_query = 'UPDATE main_data' \
                     'SET time = ?' \
-                    'WHERE link = ?'
+                    'WHERE link = ?;'
         link = list(line.keys())[0]
         arr_times = list(line.values())[0]
         cursor.execute(write_query, (arr_times, link))

@@ -340,12 +340,10 @@ if __name__ == '__main__':
     # Формат промежуточного массива: [{ссылка : время, ссылка : время}]
     # Запись оного массива true_data в базу, сравнение кол-ва косячных строк
     for line in repars_mass:
-        write_query = 'UPDATE main_data' \
-                    'SET time = ?' \
-                    'WHERE link = ?;'
+        write_query = 'UPDATE main_data SET time = ? WHERE link = ?;'
         link = list(line.keys())[0]
         arr_times = list(line.values())[0]
-        cursor.execute(write_query, (arr_times, link))
+        cursor.execute(write_query, (str(arr_times), str(link)))
     connection.commit()
     print('Изменения записаны')
 

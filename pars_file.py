@@ -16,11 +16,11 @@ def launch():
     Функция запуска, проверяет соединение с сайтом.
     :return: tru or false
     """
+    # Создание объекта вэб драйвера
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
     try:
-        # Создание объекта вэб драйвера
-        chrome_options = webdriver.ChromeOptions()
-        chrome_options.add_argument(argument='--headless')
-        driver = webdriver.Chrome(options=chrome_options)
         # Проверка соединения с сайтом
         for num in range(5):
             try:
@@ -338,7 +338,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     lines = cursor.fetchone()[0]
     print('Данные по остановкам получены, строк:', lines)
 
-    #flag_launch = False
+    flag_launch = False
 
     # Получение времени отправления по остановкам
     if flag_launch:
@@ -446,9 +446,9 @@ def data_base_file(base_bus, base_trolleybus, base_tram):
 
 if __name__ == '__main__':
     # Ссылки на транспорт
-    URL_BUS = ''  # Автобусы
+    URL_BUS = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/bus'                # Автобусы
     URL_TROLLEYBUS = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus'  # Троллейбусы
-    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'  # Трамваи
+    URL_TRAM = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram'              # Трамваи
 
     # Файлы с базами
     BASE_BUS = 'bus_data.db'  # База с данными о автобусах
@@ -464,4 +464,5 @@ if __name__ == '__main__':
     # Запуск основной функции
     if net_flag and data_base_flag:
         # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-        main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=25)
+        #main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=25)
+        main_get_data(URL_BUS, BASE_BUS, correct_data_test=False, max_workers=25)

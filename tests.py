@@ -254,14 +254,60 @@ def half_week_rout(URL, wait_time=3, iteration=8):
         return ''
 
 
+# Функция получения остановок и ссылок на расписания по остановкам
+def stops_transport_info_test(data, delay=2, iteration=5):
+    """
+    Функция получения ссылок названий остановок
+    :param data: массив с входными данными [маршрут, ссылка]
+    :param delay: Задержка после загрузки страницы
+    :param iteration: Количество повторений при недогрузке страницы
+    :return: словарь с выходными данными
+    """
+
+    # Запуск вэб драйвера
+    chrome_options = webdriver.ChromeOptions()
+    chrome_options.add_argument(argument='--headless')
+    driver = webdriver.Chrome(options=chrome_options)
+
+    direct = {}  # Прямое направление маршрута
+    reverse = {}  # Обратное
+    name_rout = data[0]
+    URL = data[1]
+    for i in range(iteration):
+        try:
+            driver.get(URL)
+            time.sleep(delay)
+            data_from_list_stationA = driver.find_element(By.ID, 'tripA')
+            name_stations_tripA = data_from_list_stationA.find_elements(By.TAG_NAME, 'a')
+            data_from_list_stationB = driver.find_element(By.ID, 'tripB')
+            name_stations_tripB = data_from_list_stationB.find_elements(By.TAG_NAME, 'a')
+            # Прямое направление
+            direct.clear()
+            number_of_station = 0
+            for element in name_stations_tripA:
+                name_station = element.find_element(By.TAG_NAME, 'h6')
+                link = element.get_attribute('href')
+                direct[name_station.text] = (link, number_of_station)
+                number_of_station += 1
+            # Обратное направление
+            reverse.clear()
+            for element in name_stations_tripB:
+                name_station = element.find_element(By.TAG_NAME, 'h6')
+                link = element.get_attribute('href')
+                reverse[name_station.text] = link
+            station_data = {name_rout: {'Прямое направление': direct.copy(), 'Обратное направление': reverse.copy()}}
+            break
+        except:
+            continue
+    else:
+        station_data = {name_rout: {'Прямое направление': '', 'Обратное направление': ''}}  # НЕ успешное завершение
+    driver.quit()
+    return station_data
+
 if __name__ == '__main__':
 
-    base = sqlite3.connect('trolleybus_data.db')
-    cursor = base.cursor()
-    write_query = 'UPDATE main_data SET time = ? WHERE link = ?;'
-    link = 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/trolleybus/4/stops/46084/0'
-    arr_times = 'новое'
-    values = (arr_times, link)
-    cursor.execute(write_query, values)
-    print('OK')
+    data = ('Трамвай № 1', 'https://minsktrans.by/lookout_yard/Home/Index/minsk#/routes/tram/1')
+    rez = stops_transport_info_test(data)
+
+    print(rez)
 

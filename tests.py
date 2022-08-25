@@ -291,10 +291,12 @@ def stops_transport_info_test(data, delay=2, iteration=5):
                 number_of_station += 1
             # Обратное направление
             reverse.clear()
+            number_of_station = 0
             for element in name_stations_tripB:
                 name_station = element.find_element(By.TAG_NAME, 'h6')
                 link = element.get_attribute('href')
-                reverse[name_station.text] = link
+                reverse[name_station.text] = (link, number_of_station)
+                number_of_station += 1
             station_data = {name_rout: {'Прямое направление': direct.copy(), 'Обратное направление': reverse.copy()}}
             break
         except:

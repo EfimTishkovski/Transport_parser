@@ -100,16 +100,20 @@ def stops_transport_info(data, delay=2, iteration=5):
             name_stations_tripB = data_from_list_stationB.find_elements(By.TAG_NAME, 'a')
             # Прямое направление
             direct.clear()
+            number_of_station = 0  # Счётчик порядковых номеров остановок
             for element in name_stations_tripA:
                 name_station = element.find_element(By.TAG_NAME, 'h6')
                 link = element.get_attribute('href')
-                direct[name_station.text] = link
+                direct[name_station.text] = (link, number_of_station)
+                number_of_station += 1
             # Обратное направление
             reverse.clear()
+            number_of_station = 0
             for element in name_stations_tripB:
                 name_station = element.find_element(By.TAG_NAME, 'h6')
                 link = element.get_attribute('href')
-                reverse[name_station.text] = link
+                reverse[name_station.text] = (link, number_of_station)
+                number_of_station += 1
             station_data = {name_rout: {'Прямое направление': direct.copy(), 'Обратное направление': reverse.copy()}}
             break
         except:
@@ -322,9 +326,11 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 for rout, data in element.items():
                     for direction, stop_link in data.items():
                         for stop, link in stop_link.items():
-                            query_for_write = "INSERT INTO main_data (rout, direction, stop, time, link) " \
-                                              "VALUES (?, ?, ?, ?, ?)"
-                            cursor.execute(query_for_write, (rout, direction, stop, link, link))
+                            name_stop = stop[0]    # Название остановки
+                            number_stop = stop[1]  # Порядковый номер остановки в маршруте
+                            query_for_write = "INSERT INTO main_data (rout, direction, stop, number_stop, time, link) " \
+                                              "VALUES (?, ?, ?, ?, ?, ?)"
+                            cursor.execute(query_for_write, (rout, direction, name_stop, number_stop, link, link))
             base.commit()
         except:
             print('Ошибка сохранения данных об остановках')
@@ -431,6 +437,7 @@ def data_base_file(base_bus, base_trolleybus, base_tram):
                     'rout TEXT, ' \
                     'direction TEXT,' \
                     'stop TEXT,' \
+                    'number_stop INTEGER,' \
                     'time TEXT,' \
                     'link TEXT);'
             cursor.execute(query)
@@ -463,6 +470,6 @@ if __name__ == '__main__':
 
     # Запуск основной функции
     if net_flag and data_base_flag:
-        # main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
-        #main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=25)
-        main_get_data(URL_BUS, BASE_BUS, correct_data_test=False, max_workers=25)
+        main_get_data(URL_TRAM, BASE_TRAM, correct_data_test=False)
+        # main_get_data(URL_TROLLEYBUS, BASE_TROLLEYBUS, correct_data_test=False, max_workers=25)
+        # main_get_data(URL_BUS, BASE_BUS, correct_data_test=False, max_workers=25)

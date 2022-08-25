@@ -332,8 +332,8 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                                               "VALUES (?, ?, ?, ?, ?, ?)"
                             cursor.execute(query_for_write, (rout, direction, name_stop, number_stop, link, link))
             base.commit()
-        except:
-            print('Ошибка сохранения данных об остановках')
+        except sqlite3.Error as erorr:
+            print('Ошибка сохранения данных об остановках', erorr)
         else:
             print('OK')
 

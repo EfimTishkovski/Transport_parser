@@ -326,11 +326,10 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 for rout, data in element.items():
                     for direction, stop_link in data.items():
                         for stop, link in stop_link.items():
-                            name_stop = stop[0]    # Название остановки
-                            number_stop = stop[1]  # Порядковый номер остановки в маршруте
+                            number_stop = link[1]  # Порядковый номер остановки в маршруте
                             query_for_write = "INSERT INTO main_data (rout, direction, stop, number_stop, time, link) " \
                                               "VALUES (?, ?, ?, ?, ?, ?)"
-                            cursor.execute(query_for_write, (rout, direction, name_stop, number_stop, link, link))
+                            cursor.execute(query_for_write, (rout, direction, stop, number_stop, link[0], link[0]))
             base.commit()
         except sqlite3.Error as erorr:
             print('Ошибка сохранения данных об остановках', erorr)
@@ -437,7 +436,6 @@ def data_base_file(base_bus, base_trolleybus, base_tram):
                     'rout TEXT, ' \
                     'direction TEXT,' \
                     'stop TEXT,' \
-                    'number_stop INTEGER,' \
                     'time TEXT,' \
                     'link TEXT);'
             cursor.execute(query)

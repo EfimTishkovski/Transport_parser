@@ -343,7 +343,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
     lines = cursor.fetchone()[0]
     print('Данные по остановкам получены, строк:', lines)
 
-    flag_launch = False
+    # flag_launch = False
 
     # Получение времени отправления по остановкам
     if flag_launch:

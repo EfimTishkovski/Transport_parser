@@ -355,6 +355,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
                 for direction, stops in rout.items():
                     for name_station, link_first in stops.items():
                         temp_mass.append(link_first)
+                        # Проверить структуру данных, ожидается кортеж в 2 значения
         """
         temp_mass_1 = []
         for i in range(1000):
@@ -379,6 +380,7 @@ def main_get_data(url, base_name, reserve_file_copy=True, correct_data_test=Fals
         arrive_time_statusbar.close()
     else:
         flag_launch = False
+        arrive_time_mass = []
         print('Ошибка, данные о времени отправления не получены')
 
     # Запись результатов в базу и подсчёт недогруженных страниц
@@ -436,6 +438,7 @@ def data_base_file(base_bus, base_trolleybus, base_tram):
                     'rout TEXT, ' \
                     'direction TEXT,' \
                     'stop TEXT,' \
+                    'number_stop TEXT,' \
                     'time TEXT,' \
                     'link TEXT);'
             cursor.execute(query)
